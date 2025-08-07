@@ -147,7 +147,7 @@ if uploaded_file:
                 st.dataframe(
                     filtered_df, 
                     use_container_width=True,  # Make it use full width
-                    height=1200  # Set height to show more rows (approximately 40-50 rows)
+                    height=800  # Set height to show more rows (approximately 40-50 rows)
                 )
             except Exception as e:
                 st.error(f"Error displaying filtered data: {e}")
@@ -157,8 +157,8 @@ if uploaded_file:
                 output = BytesIO()
                 try:
                     with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                        # Write the dataframe starting from row 3 (to leave room for title and headers)
-                        df.to_excel(writer, index=False, sheet_name='FilteredData', startrow=2, startcol=3)
+                        # Write the dataframe starting from row 3, without headers (header=False)
+                        df.to_excel(writer, index=False, header=False, sheet_name='FilteredData', startrow=2, startcol=3)
                         
                         # Get the workbook and worksheet to add the title
                         workbook = writer.book
