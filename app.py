@@ -42,9 +42,10 @@ st.markdown(
         content: '""" + translated_limit + """';
         color: #6C757D;
     }
-    # button[data-testid="stBaseButton-secondary"] {
-    #     visibility: hidden;
-    # }
+    [data-testid="stBaseButton-secondary"] {
+    content: '';
+        # visibility: hidden;
+    }
    [data-testid="stBaseButton-secondary"]::after {
         content: '""" + translated_browse_files + """';
         visibility: visible;
