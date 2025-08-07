@@ -58,14 +58,15 @@ st.markdown(
 st.markdown(
     """
     <style>
-    /* This targets the placeholder div within the multiselect */
-    [data-testid="stMultiSelect"] > div:nth-of-type(1) > div:nth-of-type(1) > div {
+    /* Hides the default 'No options to display.' or 'Choose options' text */
+    [data-testid="stMultiSelect"] .st-cx {
         visibility: hidden;
-        position: relative;
+        height: 0;
+        overflow: hidden;
     }
     
-    /* This inserts the translated placeholder text */
-    [data-testid="stMultiSelect"] > div:nth-of-type(1) > div:nth-of-type(1) > div::after {
+    /* Inserts the translated text using a pseudo-element */
+    [data-testid="stMultiSelect"] .st-cx::after {
         content: 'Seçenekleri seçin';
         visibility: visible;
         position: absolute;
@@ -76,6 +77,7 @@ st.markdown(
         overflow: hidden;
         text-overflow: ellipsis;
         max-width: 100%;
+        height: auto;
     }
     </style>
     """,
