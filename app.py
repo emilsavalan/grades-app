@@ -125,9 +125,13 @@ if uploaded_file:
                 filtered_df = df
                 st.write(f"All data ({len(filtered_df)} rows):")
             
-            # Display filtered data
+            # Display filtered data with custom height and width
             try:
-                st.dataframe(filtered_df)
+                st.dataframe(
+                    filtered_df, 
+                    use_container_width=True,  # Make it use full width
+                    height=800  # Set height to show more rows (approximately 40-50 rows)
+                )
             except Exception as e:
                 st.error(f"Error displaying filtered data: {e}")
             
