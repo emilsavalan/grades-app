@@ -157,16 +157,16 @@ if uploaded_file:
                 output = BytesIO()
                 try:
                     with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                        # Write the dataframe starting from row 3 (to leave room for title)
-                        df.to_excel(writer, index=False, sheet_name='FilteredData', startrow=1, startcol=3)
+                        # Write the dataframe starting from row 2, column A (no empty columns)
+                        df.to_excel(writer, index=False, sheet_name='FilteredData', startrow=1, startcol=0)
                         
                         # Get the workbook and worksheet to add the title
                         workbook = writer.book
                         worksheet = writer.sheets['FilteredData']
                         
-                        # Add the title in cell D1
+                        # Add the title in cell A1
                         if title:
-                            worksheet.cell(row=1, column=4, value=title)
+                            worksheet.cell(row=1, column=1, value=title)
                     
                     output.seek(0)
                     return output
