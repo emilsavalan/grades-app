@@ -272,6 +272,9 @@ if uploaded_file:
                         content_font = Font(name='Segoe UI')
                         header_fill = PatternFill(start_color='5B5FC7', end_color='5B5FC7', fill_type='solid')
 
+                        light_gray_fill = PatternFill(start_color='F2F2F2', end_color='F2F2F2', fill_type='solid')
+                        white_fill = PatternFill(start_color='FFFFFF', end_color='FFFFFF', fill_type='solid')
+
                         for row in worksheet.iter_rows():
                             for cell in row:
                                 cell.font = content_font
@@ -287,7 +290,12 @@ if uploaded_file:
                         if title:
                             title_cell_obj = worksheet.cell(row=1, column=1, value=title)
                             title_cell_obj.font = Font(name='Segoe UI', size=18, bold=True, color='FFFFFF')
-                        
+                         # Add banded rows for the data
+                        for row_index, row in enumerate(worksheet.iter_rows(min_row=3, max_row=len(excel_df) + 2)):
+                            fill = light_gray_fill if row_index % 2 == 0 else white_fill
+                            for cell in row:
+                                cell.fill = fill
+
                         # Use a dictionary to manage manual widths
                         manual_widths = {'A': 30, 'C': 35} # <--- You can adjust this value for column C
 
