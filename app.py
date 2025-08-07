@@ -301,17 +301,16 @@ if uploaded_file:
             def to_excel(df, title):
                 output = BytesIO()
                 try:
-                    # Create a copy and format percentage columns for Excel
+                    # Create a copy for Excel (don't modify the original data)
                     excel_df = df.copy()
                     percentage_columns = []
                     
+                    # Identify percentage columns but don't modify the values yet
                     for col in excel_df.columns:
                         if excel_df[col].dtype in ['float64', 'float32', 'int64', 'int32']:
                             # Check if column contains values that look like percentages (0-1 range)
                             numeric_vals = excel_df[col].dropna()
                             if len(numeric_vals) > 0 and numeric_vals.min() >= 0 and numeric_vals.max() <= 1:
-                                # Convert to percentage format (multiply by 100)
-                                excel_df[col] = excel_df[col] * 100
                                 percentage_columns.append(col)
                     
                     with pd.ExcelWriter(output, engine='openpyxl') as writer:
@@ -333,7 +332,7 @@ if uploaded_file:
                                     # Find column index
                                     col_idx = list(excel_df.columns).index(col_name) + 1  # +1 for Excel 1-based indexing
                                     
-                                    # Apply percentage format to the data rows
+                                    # Apply percentage format to the data rows (Excel will handle the *100 automatically)
                                     for row in range(3, len(excel_df) + 3):  # Start from row 3 (data rows)
                                         cell = worksheet.cell(row=row, column=col_idx)
                                         if cell.value is not None:
