@@ -42,47 +42,23 @@ st.markdown(
         content: '""" + translated_limit + """';
         color: #6C757D;
     }
-    .st-emotion-cache-1c7v8d0 a[data-testid="stFileUploadBrowseButton"] {
+    a[data-testid="stFileUploadBrowseButton"] {
         visibility: hidden;
     }
-    .st-emotion-cache-1c7v8d0 a[data-testid="stFileUploadBrowseButton"]::after {
+    a[data-testid="stFileUploadBrowseButton"]::after {
         content: '""" + translated_browse_files + """';
         visibility: visible;
         
+    }
+    div[class="st-cp st-c4 st-ar st-cq st-cr st-cs"]::after {
+        content: '""" + translated_browse_files + """';
+        visibility: visible;
     }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-st.markdown(
-    """
-    <style>
-    /* Hides the default 'No options to display.' or 'Choose options' text */
-    [data-testid="stMultiSelect"] .st-cx {
-        visibility: hidden;
-        height: 0;
-        overflow: hidden;
-    }
-    
-    /* Inserts the translated text using a pseudo-element */
-    [data-testid="stMultiSelect"] .st-cx::after {
-        content: 'Seçenekleri seçin';
-        visibility: visible;
-        position: absolute;
-        top: 0;
-        left: 0;
-        color: #6C757D;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 100%;
-        height: auto;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
 
 st.title("Excel Qiymətlər")
 
