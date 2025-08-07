@@ -184,11 +184,25 @@ if uploaded_file:
                                     # Check if this row is selected
                                     is_selected = st.session_state.selected_duplicates.get(email) == idx
                                     
-                                    # Create summary for the block
+                                    # Create summary for the block (include Points if available)
                                     summary_parts = []
-                                    for col in group.columns[:3]:  # Show first 3 columns
+                                    
+                                    # First add up to 3 regular columns
+                                    for col in group.columns[:3]:
                                         val = str(row[col])[:20] if row[col] is not None else "None"
                                         summary_parts.append(f"**{col}:** {val}")
+                                    
+                                    # Add Points column if it exists and not already included
+                                    points_col = None
+                                    for col_name in group.columns:
+                                        if col_name and "point" in col_name.lower():
+                                            points_col = col_name
+                                            break
+                                    
+                                    if points_col and points_col not in group.columns[:3]:
+                                        points_val = str(row[points_col]) if row[points_col] is not None else "None"
+                                        summary_parts.append(f"**{points_col}:** {points_val}")
+                                    
                                     summary = "\n\n".join(summary_parts)
                                     
                                     # Color based on selection
@@ -215,6 +229,8 @@ if uploaded_file:
                             st.success("✅ All duplicates resolved! You can now download the file.")
                             allow_download = True
                             final_filtered_df = final_df.reset_index(drop=True)
+                            # Reset index to start from 1 instead of 0
+                            final_filtered_df.index = final_filtered_df.index + 1
                             st.write(f"Final data ({len(final_filtered_df)} rows after removing duplicates):")
                             st.dataframe(final_filtered_df, use_container_width=True, height=400)
                         else:
