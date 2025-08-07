@@ -156,7 +156,7 @@ if uploaded_file:
                     st.dataframe(
                         display_df,
                         use_container_width=True,
-                        height=800
+                        height=1200
                     )
                 except Exception as e:
                     st.error(f"Error displaying filtered data: {e}")
@@ -275,7 +275,7 @@ if uploaded_file:
                     st.dataframe(
                         display_df,
                         use_container_width=True,
-                        height=800
+                        height=1200
                     )
                 except Exception as e:
                     st.error(f"Error displaying filtered data: {e}")
