@@ -272,20 +272,20 @@ if uploaded_file:
                         # Define the font style for the entire content
                         content_font = Font(name='Segoe UI')
                         
-                        # 1. Style the title cell
-                        if title:
-                            title_cell_obj = worksheet.cell(row=1, column=1, value=title)
-                            title_cell_obj.font = Font(name='Segoe UI', size=18, bold=True)
-                        
-                        # 2. Iterate through all data and header cells to apply font and auto-fit width
+                        # 1. First, iterate through all cells to apply the general font
                         for row in worksheet.iter_rows():
                             for cell in row:
                                 cell.font = content_font
                         
-                        # 3. Re-apply the bold font for the headers (row 2)
+                        # 2. Then, re-apply the specific, bold font for the headers (row 2)
                         header_row = worksheet[2]
                         for cell in header_row:
                             cell.font = Font(name='Segoe UI', bold=True)
+
+                        # 3. Finally, apply the specific, large font for the title (row 1)
+                        if title:
+                            title_cell_obj = worksheet.cell(row=1, column=1, value=title)
+                            title_cell_obj.font = Font(name='Segoe UI', size=18, bold=True)
 
                         # 4. Fit column widths
                         for i, column_name in enumerate(excel_df.columns):
@@ -316,7 +316,7 @@ if uploaded_file:
                     return output
                 except Exception as e:
                     st.error(f"Error creating Excel file: {e}")
-                    return None            
+                    return None           
             # Create download button (only if duplicates are resolved)
             if allow_download:
                 excel_data = to_excel(final_filtered_df, title_cell)
