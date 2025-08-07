@@ -43,8 +43,7 @@ st.markdown(
         color: #6C757D;
     }
     [data-testid="stBaseButton-secondary"] {
-    content: '';
-        # visibility: hidden;
+        visibility: hidden;
     }
    [data-testid="stBaseButton-secondary"]::after {
         content: '""" + translated_browse_files + """';
