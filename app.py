@@ -5,7 +5,7 @@ import pandas as pd
 from io import BytesIO
 
 st.set_page_config(page_title="Excel Processor", layout="centered")
-st.title("í³Š Excel Upload and Processor")
+st.title("ï¿½ Excel Upload and Processor")
 
 uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
 
@@ -24,12 +24,5 @@ if uploaded_file:
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
             dataframe.to_excel(writer, index=False)
         processed_data = output.getvalue()
-        return processed_data
-
-    st.download_button(
-        label="í³¥ Download Modified Excel",
-        data=to_excel(df),
-        file_name="modified.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
+        return 
 
