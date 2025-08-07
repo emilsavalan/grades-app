@@ -297,7 +297,7 @@ if uploaded_file:
                         
                         # Manually set the width of the first column
                         worksheet.column_dimensions['A'].width = 30
-                        worksheet.column_dimensions['C'].width = 25
+                        worksheet.column_dimensions['C'].width = 15
 
                         # Auto-fit other column widths
                         for i, column_name in enumerate(excel_df.columns):
