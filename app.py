@@ -269,56 +269,50 @@ if uploaded_file:
                         from openpyxl.styles import Font, PatternFill
                         from openpyxl.utils import get_column_letter
 
-                        # Define the general font and a fill style with the requested color
                         content_font = Font(name='Segoe UI')
                         header_fill = PatternFill(start_color='5B5FC7', end_color='5B5FC7', fill_type='solid')
 
-                        # First, iterate through all cells to apply the general font
                         for row in worksheet.iter_rows():
                             for cell in row:
                                 cell.font = content_font
                         
-                        # Apply the color fill to the first two rows
                         for row in worksheet.iter_rows(min_row=1, max_row=2):
                             for cell in row:
                                 cell.fill = header_fill
 
-                        # Then, re-apply the specific bold font for the headers (row 2)
-                        # Add color='FFFFFF' for white text
                         header_row = worksheet[2]
                         for cell in header_row:
                             cell.font = Font(name='Segoe UI', bold=True, color='FFFFFF')
 
-                        # Finally, apply the specific, large font for the title (row 1)
-                        # Add color='FFFFFF' for white text
                         if title:
                             title_cell_obj = worksheet.cell(row=1, column=1, value=title)
                             title_cell_obj.font = Font(name='Segoe UI', size=18, bold=True, color='FFFFFF')
                         
-                        # Manually set the width of the first column
-                        worksheet.column_dimensions['A'].width = 30
-                        worksheet.column_dimensions['C'].width = 10
+                        # Use a dictionary to manage manual widths
+                        manual_widths = {'A': 15, 'C': 10} # <--- You can adjust this value for column C
 
-                        # Auto-fit other column widths
+                        # Loop through all columns to set width
                         for i, column_name in enumerate(excel_df.columns):
-                            if i == 0:
-                                continue
-                            max_length = 0
-                            column = get_column_letter(i + 1)
-                            for cell in worksheet[column]:
-                                try:
-                                    if len(str(cell.value)) > max_length:
-                                        max_length = len(str(cell.value))
-                                except:
-                                    pass
-                            adjusted_width = (max_length + 2)
-                            worksheet.column_dimensions[column].width = adjusted_width
-                        
-                        # ADDITION: Add auto-filters to the header row
+                            column_letter = get_column_letter(i + 1)
+                            
+                            # Check if a manual width is set for this column
+                            if column_letter in manual_widths:
+                                worksheet.column_dimensions[column_letter].width = manual_widths[column_letter]
+                            else:
+                                # Otherwise, calculate auto-fit width
+                                max_length = 0
+                                for cell in worksheet[column_letter]:
+                                    try:
+                                        if len(str(cell.value)) > max_length:
+                                            max_length = len(str(cell.value))
+                                    except:
+                                        pass
+                                adjusted_width = (max_length + 2)
+                                worksheet.column_dimensions[column_letter].width = adjusted_width
+
                         filter_range = f'A2:{get_column_letter(len(excel_df.columns))}2'
                         worksheet.auto_filter.ref = filter_range
 
-                        # Apply percentage formatting to percentage columns
                         if percentage_columns:
                             for col_name in percentage_columns:
                                 try:
