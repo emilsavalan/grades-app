@@ -18,9 +18,6 @@ st.markdown("""
         padding-left: 1rem;
         padding-right: 1rem;
     }
-    button._terminalButton_rix23_138[data-testid="manage-app-button"] {
-  display: none;
-}
 
     </style>
     """, unsafe_allow_html=True)
@@ -303,39 +300,55 @@ if uploaded_file:
             def to_excel(df, title):
                 output = BytesIO()
                 try:
-                    # Create a copy for Excel (don't modify the original data)
                     excel_df = df.copy()
                     percentage_columns = []
                     
-                    # Identify percentage columns but don't modify the values yet
                     for col in excel_df.columns:
                         if excel_df[col].dtype in ['float64', 'float32', 'int64', 'int32']:
-                            # Check if column contains values that look like percentages (0-1 range)
                             numeric_vals = excel_df[col].dropna()
                             if len(numeric_vals) > 0 and numeric_vals.min() >= 0 and numeric_vals.max() <= 1:
                                 percentage_columns.append(col)
                     
                     with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                        # Write the dataframe starting from row 2, column A (no empty columns)
                         excel_df.to_excel(writer, index=False, sheet_name='FilteredData', startrow=1, startcol=0)
                         
-                        # Get the workbook and worksheet to add the title and formatting
                         workbook = writer.book
                         worksheet = writer.sheets['FilteredData']
-                        
-                        # Add the title in cell A1
+
+                        # Import styling classes
+                        from openpyxl.styles import Font
+                        from openpyxl.utils import get_column_letter
+
+                        # Style the first row (title row)
                         if title:
-                            worksheet.cell(row=1, column=1, value=title)
+                            title_cell = worksheet.cell(row=1, column=1, value=title)
+                            title_cell.font = Font(name='Segoe UI', size=18, bold=True)
+                        
+                        # Style the header row (row 2) and fit column widths
+                        header_font = Font(name='Segoe UI', bold=True)
+                        for i, column_name in enumerate(excel_df.columns):
+                            # Set font for header
+                            header_cell = worksheet.cell(row=2, column=i + 1, value=column_name)
+                            header_cell.font = header_font
+                            
+                            # Auto-fit column width
+                            max_length = 0
+                            column = get_column_letter(i + 1)
+                            for cell in worksheet[column]:
+                                try:
+                                    if len(str(cell.value)) > max_length:
+                                        max_length = len(str(cell.value))
+                                except:
+                                    pass
+                            adjusted_width = (max_length + 2)
+                            worksheet.column_dimensions[column].width = adjusted_width
                         
                         # Apply percentage formatting to percentage columns
                         if percentage_columns:
                             for col_name in percentage_columns:
                                 try:
-                                    # Find column index
-                                    col_idx = list(excel_df.columns).index(col_name) + 1  # +1 for Excel 1-based indexing
-                                    
-                                    # Apply percentage format to the data rows (Excel will handle the *100 automatically)
-                                    for row in range(3, len(excel_df) + 3):  # Start from row 3 (data rows)
+                                    col_idx = list(excel_df.columns).index(col_name) + 1
+                                    for row in range(3, len(excel_df) + 3):
                                         cell = worksheet.cell(row=row, column=col_idx)
                                         if cell.value is not None:
                                             cell.number_format = '0.0%'
