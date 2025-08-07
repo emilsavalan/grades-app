@@ -2,13 +2,14 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 import openpyxl
+from openpyxl.styles import Font # <-- Ensure these are imported
+from openpyxl.utils import get_column_letter # <-- Ensure these are imported
 
 # Set page config to wide mode
 st.set_page_config(
     page_title="Excel",
-    layout="wide"  # This makes the app use the full width of the browser
+    layout="wide"
 )
-
 
 # Custom CSS to make it even wider if needed
 st.markdown("""
@@ -18,12 +19,9 @@ st.markdown("""
         padding-left: 1rem;
         padding-right: 1rem;
     }
-
+    
     </style>
     """, unsafe_allow_html=True)
-
-
-
 
 st.title("Filter Excel by Assignments")
 
@@ -31,29 +29,23 @@ uploaded_file = st.file_uploader("Upload Excel file (.xlsx)", type=["xlsx"])
 
 if uploaded_file:
     wb = openpyxl.load_workbook(uploaded_file, data_only=True)
-    ws = wb.active  # or specify sheet explicitly
+    ws = wb.active
     
-    # Columns indexes for D,G,H,M,N,O (1-indexed: D=4, G=7, H=8, M=13, N=14, O=15)
     cols_to_copy = [4, 7, 8, 13, 14, 15]
     
-    # Get title from row 1, column D
-    title_cell = ws.cell(row=1, column=4).value  # D1
+    title_cell = ws.cell(row=1, column=4).value
     st.write("Title from D1:", title_cell)
     
-    # Get actual headers from row 2 for these columns
     raw_headers = [ws.cell(row=2, column=col).value for col in cols_to_copy]
     
-    # Clean up headers (remove None values and ensure they're strings)
     selected_headers = []
     for i, header in enumerate(raw_headers):
         if header is None or header == "":
-            # Use column letter as fallback for empty headers
             col_letter = openpyxl.utils.get_column_letter(cols_to_copy[i])
             unique_header = f"Column_{col_letter}"
         else:
             unique_header = str(header).strip()
         
-        # Handle duplicates by adding a suffix
         original_header = unique_header
         counter = 1
         while unique_header in selected_headers:
@@ -62,7 +54,6 @@ if uploaded_file:
         
         selected_headers.append(unique_header)
     
-    # First, find which column index corresponds to "Assignments"
     assignments_col_index = None
     assignments_excel_col = None
     for i, header in enumerate(raw_headers):
@@ -71,37 +62,25 @@ if uploaded_file:
             assignments_excel_col = cols_to_copy[i]
             break
     
-    # Read data starting from row 3, filtering for "riyaziyyat" in Assignments column
     data = []
     filtered_rows_count = 0
     total_rows_count = 0
     
-    for row in range(3, ws.max_row + 1):  # Start from row 3 since row 2 has headers
+    for row in range(3, ws.max_row + 1):
         total_rows_count += 1
         row_values = [ws.cell(row=row, column=col).value for col in cols_to_copy]
         
-        # Check if this row should be included (contains "riyaziyyat" in assignments column)
         if assignments_col_index is not None:
             assignments_value = row_values[assignments_col_index]
             if assignments_value and isinstance(assignments_value, str):
-                # Check for both "riyaziyyat" and "Riyyaziyyat" (case insensitive)
                 if "riyaziyyat" in assignments_value.lower():
                     data.append(row_values)
                     filtered_rows_count += 1
         else:
-            # If assignments column not found, include all rows
             data.append(row_values)
     
-    # Create DataFrame with unique headers
     df = pd.DataFrame(data, columns=selected_headers)
     
-    # Create DataFrame with unique headers
-    df = pd.DataFrame(data, columns=selected_headers)
-    
-    # Display sample data (handle potential display issues)
-    # Removed sample data display as requested
-    
-    # Find column with header "Assignments" (case insensitive)
     assignments_col = None
     for col_name in selected_headers:
         if col_name and "assignment" in col_name.lower():
@@ -112,7 +91,6 @@ if uploaded_file:
         st.error("The column 'Assignments' was not found in the selected columns.")
         st.write("Available columns:", selected_headers)
     else:
-        # Get unique assignments, filtering out None/empty values
         assignments_series = df[assignments_col].dropna()
         assignments_series = assignments_series[assignments_series != ""]
         assignments_options = sorted(assignments_series.astype(str).unique())
@@ -121,37 +99,32 @@ if uploaded_file:
             st.warning("No assignments found in the assignments column.")
         else:
             selected_assignments = st.multiselect(
-                "Select Assignments to filter", 
+                "Select Assignments to filter",
                 assignments_options,
                 help="Select one or more assignments to filter the data"
             )
             
             if selected_assignments:
-                # Convert to string for comparison to handle mixed types
                 mask = df[assignments_col].astype(str).isin(selected_assignments)
                 filtered_df = df[mask]
                 st.write(f"Filtered data ({len(filtered_df)} rows):")
                 
-                # Display filtered data with custom height and width
                 try:
-                    # Format percentage columns for display
                     display_df = filtered_df.copy()
                     for col in display_df.columns:
                         if display_df[col].dtype in ['float64', 'float32', 'int64', 'int32']:
-                            # Check if column contains values that look like percentages (0-1 range)
                             numeric_vals = display_df[col].dropna()
                             if len(numeric_vals) > 0 and numeric_vals.min() >= 0 and numeric_vals.max() <= 1:
                                 display_df[col] = display_df[col].apply(lambda x: f"{x*100:.1f}%" if pd.notna(x) else x)
                     
                     st.dataframe(
-                        display_df, 
-                        use_container_width=True,  # Make it use full width
-                        height=800  # Set height to show more rows (approximately 40-50 rows)
+                        display_df,
+                        use_container_width=True,
+                        height=800
                     )
                 except Exception as e:
                     st.error(f"Error displaying filtered data: {e}")
                 
-                # Check for duplicates in Email Address column ONLY after user filters
                 email_col = None
                 for col_name in selected_headers:
                     if col_name and "email" in col_name.lower():
@@ -162,50 +135,41 @@ if uploaded_file:
                     st.warning("Email Address column not found. Download is disabled.")
                     allow_download = False
                 else:
-                    # Find duplicates
                     duplicates_mask = filtered_df.duplicated(subset=[email_col], keep=False)
                     duplicated_df = filtered_df[duplicates_mask]
                     
                     if len(duplicated_df) > 0:
                         st.warning(f"⚠️ Found {len(duplicated_df)} rows with duplicate Email Addresses!")
                         
-                        # Group duplicates by email address
                         duplicate_groups = duplicated_df.groupby(email_col)
                         
                         st.subheader("Duplicate Email Addresses - Click to select one row from each group:")
                         
-                        # Initialize session state for selections
                         if 'selected_duplicates' not in st.session_state:
                             st.session_state.selected_duplicates = {}
                         
-                        final_df = filtered_df[~duplicates_mask].copy()  # Start with non-duplicates
+                        final_df = filtered_df[~duplicates_mask].copy()
                         all_selected = True
                         
                         for email, group in duplicate_groups:
                             st.write(f"**Email: {email}** ({len(group)} duplicates)")
                             
-                            # Create interactive selection blocks
                             cols = st.columns(len(group))
                             
                             for i, (idx, row) in enumerate(group.iterrows()):
                                 with cols[i]:
-                                    # Check if this row is selected
                                     is_selected = st.session_state.selected_duplicates.get(email) == idx
                                     
-                                    # Create summary for the block (include Points if available)
                                     summary_parts = []
                                     
-                                    # First add up to 3 regular columns
                                     for col in group.columns[:3]:
                                         val = row[col]
-                                        # Format values that look like percentages (0-1 decimal values)
                                         if val is not None and isinstance(val, (int, float)) and 0 <= val <= 1:
                                             formatted_val = f"{val * 100:.1f}%"
                                         else:
                                             formatted_val = str(val)[:20] if val is not None else "None"
                                         summary_parts.append(f"**{col}:** {formatted_val}")
                                     
-                                    # Add Points column if it exists and not already included
                                     points_col = None
                                     for col_name in group.columns:
                                         if col_name and "point" in col_name.lower():
@@ -214,7 +178,6 @@ if uploaded_file:
                                     
                                     if points_col and points_col not in group.columns[:3]:
                                         points_val = row[points_col]
-                                        # Format points if it's a decimal between 0-1
                                         if points_val is not None and isinstance(points_val, (int, float)) and 0 <= points_val <= 1:
                                             formatted_points = f"{points_val * 100:.1f}%"
                                         else:
@@ -223,38 +186,30 @@ if uploaded_file:
                                     
                                     summary = "\n\n".join(summary_parts)
                                     
-                                    # Color based on selection
                                     if is_selected:
                                         st.success(f"✅ **SELECTED**\n\n**Row {idx}**\n\n{summary}")
                                     else:
                                         st.error(f"❌ **Row {idx}**\n\n{summary}")
                                     
-                                    # Selection button
                                     if st.button(f"Select Row {idx}", key=f"select_{email}_{idx}"):
                                         st.session_state.selected_duplicates[email] = idx
                                         st.rerun()
                             
-                            # Check if this group has a selection
                             if email not in st.session_state.selected_duplicates:
                                 all_selected = False
                             else:
-                                # Add selected row to final dataframe
                                 selected_idx = st.session_state.selected_duplicates[email]
                                 final_df = pd.concat([final_df, group.loc[[selected_idx]]])
                         
-                        # Check if all duplicates are resolved
                         if all_selected:
                             st.success("✅ All duplicates resolved! You can now download the file.")
                             allow_download = True
                             final_filtered_df = final_df.reset_index(drop=True)
-                            # Reset index to start from 1 instead of 0
                             final_filtered_df.index = final_filtered_df.index + 1
                             
-                            # Format percentage columns for final display
                             final_display_df = final_filtered_df.copy()
                             for col in final_display_df.columns:
                                 if final_display_df[col].dtype in ['float64', 'float32', 'int64', 'int32']:
-                                    # Check if column contains values that look like percentages (0-1 range)
                                     numeric_vals = final_display_df[col].dropna()
                                     if len(numeric_vals) > 0 and numeric_vals.min() >= 0 and numeric_vals.max() <= 1:
                                         final_display_df[col] = final_display_df[col].apply(lambda x: f"{x*100:.1f}%" if pd.notna(x) else x)
@@ -273,26 +228,22 @@ if uploaded_file:
                 filtered_df = df
                 st.write(f"All data ({len(filtered_df)} rows):")
                 
-                # Display filtered data with custom height and width
                 try:
-                    # Format percentage columns for display
                     display_df = filtered_df.copy()
                     for col in display_df.columns:
                         if display_df[col].dtype in ['float64', 'float32', 'int64', 'int32']:
-                            # Check if column contains values that look like percentages (0-1 range)
                             numeric_vals = display_df[col].dropna()
                             if len(numeric_vals) > 0 and numeric_vals.min() >= 0 and numeric_vals.max() <= 1:
                                 display_df[col] = display_df[col].apply(lambda x: f"{x*100:.1f}%" if pd.notna(x) else x)
                     
                     st.dataframe(
-                        display_df, 
-                        use_container_width=True,  # Make it use full width
-                        height=800  # Set height to show more rows (approximately 40-50 rows)
+                        display_df,
+                        use_container_width=True,
+                        height=800
                     )
                 except Exception as e:
                     st.error(f"Error displaying filtered data: {e}")
                 
-                # Don't check for duplicates until user filters
                 allow_download = True
                 final_filtered_df = filtered_df
             
@@ -314,15 +265,11 @@ if uploaded_file:
                         
                         workbook = writer.book
                         worksheet = writer.sheets['FilteredData']
-
-                        # Import styling classes
-                        from openpyxl.styles import Font
-                        from openpyxl.utils import get_column_letter
-
+                        
                         # Style the first row (title row)
                         if title:
-                            title_cell = worksheet.cell(row=1, column=1, value=title)
-                            title_cell.font = Font(name='Segoe UI', size=18, bold=True)
+                            title_cell_obj = worksheet.cell(row=1, column=1, value=title)
+                            title_cell_obj.font = Font(name='Segoe UI', size=18, bold=True)
                         
                         # Style the header row (row 2) and fit column widths
                         header_font = Font(name='Segoe UI', bold=True)
@@ -365,16 +312,13 @@ if uploaded_file:
             if allow_download:
                 excel_data = to_excel(final_filtered_df, title_cell)
                 if excel_data:
-                    # Create dynamic filename
                     original_filename = uploaded_file.name
-                    # Remove last 17 characters and file extension
-                    base_name = original_filename.rsplit('.', 1)[0]  # Remove extension first
+                    base_name = original_filename.rsplit('.', 1)[0]
                     if len(base_name) > 20:
-                        trimmed_name = base_name[:-20]  # Remove last 17 characters
+                        trimmed_name = base_name[:-20]
                     else:
                         trimmed_name = base_name
                     
-                    # Get first 15 characters of first selected assignment
                     filter_part = ""
                     if selected_assignments:
                         first_filter = str(selected_assignments[0])[:20]
