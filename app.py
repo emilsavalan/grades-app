@@ -1,60 +1,57 @@
 import streamlit as st
 import pandas as pd
 from io import BytesIO
+import openpyxl
 
 st.title("Filter Excel by Assignments")
 
 uploaded_file = st.file_uploader("Upload Excel file (.xlsx)", type=["xlsx"])
 
 if uploaded_file:
-    # Load workbook with openpyxl to read headers from row 1 and columns D to O
-    import openpyxl
-
     wb = openpyxl.load_workbook(uploaded_file, data_only=True)
-    ws = wb.active  # or specify sheet name if needed
+    ws = wb.active  # or specify sheet explicitly
 
-    # Extract headers from row 1, columns D to O (D=4, O=15)
-    headers = [ws.cell(row=1, column=col).value for col in range(4, 16)]
-
-    # Columns to copy (D,G,H,M,N,O) correspond to 4,7,8,13,14,15
+    # Columns indexes for D,G,H,M,N,O
     cols_to_copy = [4, 7, 8, 13, 14, 15]
 
-    # Extract selected headers for those columns
+    # Get headers from row 1 for these columns
     selected_headers = [ws.cell(row=1, column=col).value for col in cols_to_copy]
-    st.write("Extracted headers:", selected_headers)
 
-    # Extract data starting from row 2 for those columns
+    # Read data starting from row 2 to last row for these columns
     data = []
-    for row in ws.iter_rows(min_row=2, max_row=ws.max_row):
-        row_data = [row[col - 1].value for col in cols_to_copy]  # zero-index fix
-        data.append(row_data)
+    for row in range(2, ws.max_row + 1):
+        row_values = [ws.cell(row=row, column=col).value for col in cols_to_copy]
+        data.append(row_values)
 
-    # Create DataFrame
     df = pd.DataFrame(data, columns=selected_headers)
 
-    # Verify 'Assignments' column exists in selected_headers
-    if "Assignments" not in selected_headers:
-        st.error("The column 'Assignments' is not found in the selected columns.")
+    st.write("Extracted headers:", selected_headers)
+    st.write("Sample data:", df.head())
+
+    # Find column with header "Assignments" (case insensitive)
+    assignments_col = None
+    for col_name in selected_headers:
+        if col_name and col_name.strip().lower() == "assignments":
+            assignments_col = col_name
+            break
+
+    if assignments_col is None:
+        st.error("The column 'Assignments' was not found in the selected columns.")
     else:
-        # Show unique values from "Assignments"
-        assignments_options = sorted(df["Assignments"].dropna().unique())
+        assignments_options = sorted(df[assignments_col].dropna().unique())
         selected_assignments = st.multiselect("Select Assignments to filter", assignments_options)
 
         if selected_assignments:
-            filtered_df = df[df["Assignments"].isin(selected_assignments)]
+            filtered_df = df[df[assignments_col].isin(selected_assignments)]
         else:
             filtered_df = df
 
-        st.write("Filtered data:")
         st.dataframe(filtered_df)
 
-        # Function to save filtered_df to Excel in memory
         def to_excel(df):
             output = BytesIO()
             with pd.ExcelWriter(output, engine='openpyxl') as writer:
                 df.to_excel(writer, index=False, sheet_name='FilteredData')
-                # Write headers from row 1 in columns D to O as Excel does (optional)
-                # But here pandas writes headers in first row by default.
             output.seek(0)
             return output
 
