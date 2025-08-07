@@ -21,6 +21,7 @@ if uploaded_file:
 
     # Extract selected headers for those columns
     selected_headers = [ws.cell(row=1, column=col).value for col in cols_to_copy]
+    st.write("Extracted headers:", selected_headers)
 
     # Extract data starting from row 2 for those columns
     data = []
