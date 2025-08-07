@@ -90,12 +90,8 @@ if uploaded_file:
     # Create DataFrame with unique headers
     df = pd.DataFrame(data, columns=selected_headers)
     
-    st.write(f"Total rows processed: {total_rows_count}")
-    st.write(f"Rows containing 'riyaziyyat': {filtered_rows_count}")
-    st.write(f"Rows copied to new file: {len(df)}")
-    
-    st.write("Extracted headers:", selected_headers)
-    st.write("Raw headers from Excel:", raw_headers)
+    # Create DataFrame with unique headers
+    df = pd.DataFrame(data, columns=selected_headers)
     
     # Display sample data (handle potential display issues)
     # Removed sample data display as requested
@@ -111,8 +107,6 @@ if uploaded_file:
         st.error("The column 'Assignments' was not found in the selected columns.")
         st.write("Available columns:", selected_headers)
     else:
-        st.success(f"Found assignments column: {assignments_col}")
-        
         # Get unique assignments, filtering out None/empty values
         assignments_series = df[assignments_col].dropna()
         assignments_series = assignments_series[assignments_series != ""]
@@ -358,12 +352,3 @@ if uploaded_file:
                     )
             else:
                 st.error("❌ Cannot download: Please resolve all duplicate Email Addresses first.")
-            
-            # Display some statistics
-            st.subheader("Data Statistics")
-            st.write(f"Total rows in original data: {len(df)}")
-            st.write(f"Total rows after filtering: {len(filtered_df)}")
-            if allow_download and 'final_filtered_df' in locals():
-                st.write(f"Final rows after duplicate removal: {len(final_filtered_df)}")
-            if assignments_col in df.columns:
-                st.write(f"Unique assignments found: {len(assignments_options)}")
