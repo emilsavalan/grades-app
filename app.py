@@ -18,17 +18,14 @@ st.markdown("""
         padding-left: 1rem;
         padding-right: 1rem;
     }
+    button._terminalButton_rix23_138[data-testid="manage-app-button"] {
+  display: none;
+}
+
     </style>
     """, unsafe_allow_html=True)
 
-# remove the hamburger in the upper right hand corner and the Made with Streamlit footer
-hide_menu_style = """
-        <style>
-        #MainMenu {visibility: hidden;}
-            footer {visibility: hidden;}
-        </style>
-        """
-st.markdown(hide_menu_style, unsafe_allow_html=True)
+
 
 
 st.title("Filter Excel by Assignments")
