@@ -42,14 +42,14 @@ st.markdown(
         content: '""" + translated_limit + """';
         color: #6C757D;
     }
-    button[data-testid="stBaseButton-secondary"] {
-        visibility: hidden;
-    }
-    button[data-testid="stBaseButton-secondary"]::after {
-        content: '""" + translated_browse_files + """';
-        visibility: visible;
+    # button[data-testid="stBaseButton-secondary"] {
+    #     visibility: hidden;
+    # }
+    # button[data-testid="stBaseButton-secondary"]::after {
+    #     content: '""" + translated_browse_files + """';
+    #     visibility: visible;
         
-    }
+    # }
 
     </style>
     """,
