@@ -157,8 +157,8 @@ if uploaded_file:
                 output = BytesIO()
                 try:
                     with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                        # Write the dataframe starting from row 3, without headers (header=False)
-                        df.to_excel(writer, index=False, header=False, sheet_name='FilteredData', startrow=2, startcol=3)
+                        # Write the dataframe starting from row 3 (to leave room for title)
+                        df.to_excel(writer, index=False, sheet_name='FilteredData', startrow=1, startcol=3)
                         
                         # Get the workbook and worksheet to add the title
                         workbook = writer.book
@@ -167,11 +167,6 @@ if uploaded_file:
                         # Add the title in cell D1
                         if title:
                             worksheet.cell(row=1, column=4, value=title)
-                        
-                        # Add column headers in row 2 (columns D, G, H, M, N, O positions)
-                        header_positions = [4, 7, 8, 13, 14, 15]  # D, G, H, M, N, O
-                        for i, (header, col_pos) in enumerate(zip(df.columns, header_positions)):
-                            worksheet.cell(row=2, column=col_pos, value=header)
                     
                     output.seek(0)
                     return output
