@@ -134,8 +134,8 @@ if uploaded_file:
         else:
             selected_assignments = st.multiselect(
                 "İmtahanları seç",
-                placeholder="İmtahanları seçin",
                 assignments_options,
+                placeholder="İmtahanları seçin",
                 help="Bir və ya daha çox imtahan seç"
             )
             
