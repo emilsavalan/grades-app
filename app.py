@@ -7,7 +7,7 @@ from openpyxl.utils import get_column_letter # <-- Ensure these are imported
 
 # Set page config to wide mode
 st.set_page_config(
-    page_title="Excel",
+    page_title="Excel Qiymətlər",
     layout="wide"
 )
 
@@ -23,9 +23,9 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-st.title("Filter Excel by Assignments")
+st.title("Excel Qiymətlər")
 
-uploaded_file = st.file_uploader("Upload Excel file (.xlsx)", type=["xlsx"])
+uploaded_file = st.file_uploader("Exceli yüklə", type=["xlsx"])
 
 if uploaded_file:
     wb = openpyxl.load_workbook(uploaded_file, data_only=True)
@@ -34,7 +34,7 @@ if uploaded_file:
     cols_to_copy = [4, 7, 8, 13, 14, 15]
     
     title_cell = ws.cell(row=1, column=4).value
-    st.write("Title from D1:", title_cell)
+    # st.write("Title from D1:", title_cell)
     
     raw_headers = [ws.cell(row=2, column=col).value for col in cols_to_copy]
     
@@ -88,26 +88,26 @@ if uploaded_file:
             break
     
     if assignments_col is None:
-        st.error("The column 'Assignments' was not found in the selected columns.")
-        st.write("Available columns:", selected_headers)
+        st.error("'Assignments' sütunu tapılmadı")
+        st.write("sütunlar:", selected_headers)
     else:
         assignments_series = df[assignments_col].dropna()
         assignments_series = assignments_series[assignments_series != ""]
         assignments_options = sorted(assignments_series.astype(str).unique())
         
         if len(assignments_options) == 0:
-            st.warning("No assignments found in the assignments column.")
+            st.warning("İmtahan tapılmadı sütunda")
         else:
             selected_assignments = st.multiselect(
-                "Select Assignments to filter",
+                "İmtahanları seç",
                 assignments_options,
-                help="Select one or more assignments to filter the data"
+                help="Bir və ya daha çox imtahan seç"
             )
             
             if selected_assignments:
                 mask = df[assignments_col].astype(str).isin(selected_assignments)
                 filtered_df = df[mask]
-                st.write(f"Filtered data ({len(filtered_df)} rows):")
+                st.write(f"Seçilmiş ({len(filtered_df)} nəticələr):")
                 
                 try:
                     display_df = filtered_df.copy()
@@ -132,18 +132,18 @@ if uploaded_file:
                         break
                 
                 if email_col is None:
-                    st.warning("Email Address column not found. Download is disabled.")
+                    st.warning("Email ünvan sütunu yoxdur")
                     allow_download = False
                 else:
                     duplicates_mask = filtered_df.duplicated(subset=[email_col], keep=False)
                     duplicated_df = filtered_df[duplicates_mask]
                     
                     if len(duplicated_df) > 0:
-                        st.warning(f"⚠️ Found {len(duplicated_df)} rows with duplicate Email Addresses!")
+                        st.warning(f"⚠️ {len(duplicated_df)} dənə eyni imtahan nəticəsi olan şagird tapıldı")
                         
                         duplicate_groups = duplicated_df.groupby(email_col)
                         
-                        st.subheader("Duplicate Email Addresses - Click to select one row from each group:")
+                        st.subheader("Eyni şagirdlərin yalnız bir nəticəsin seçin")
                         
                         if 'selected_duplicates' not in st.session_state:
                             st.session_state.selected_duplicates = {}
@@ -152,7 +152,7 @@ if uploaded_file:
                         all_selected = True
                         
                         for email, group in duplicate_groups:
-                            st.write(f"**Email: {email}** ({len(group)} duplicates)")
+                            st.write(f"**Email: {email}** ({len(group)} təkrar)")
                             
                             cols = st.columns(len(group))
                             
@@ -187,11 +187,11 @@ if uploaded_file:
                                     summary = "\n\n".join(summary_parts)
                                     
                                     if is_selected:
-                                        st.success(f"✅ **SELECTED**\n\n**Row {idx}**\n\n{summary}")
+                                        st.success(f"✅ **SEÇİLDİ**\n\n**Sıra {idx}**\n\n{summary}")
                                     else:
-                                        st.error(f"❌ **Row {idx}**\n\n{summary}")
+                                        st.error(f"❌ **Sıra {idx}**\n\n{summary}")
                                     
-                                    if st.button(f"Select Row {idx}", key=f"select_{email}_{idx}"):
+                                    if st.button(f"Seç Sıra {idx}", key=f"select_{email}_{idx}"):
                                         st.session_state.selected_duplicates[email] = idx
                                         st.rerun()
                             
@@ -202,7 +202,7 @@ if uploaded_file:
                                 final_df = pd.concat([final_df, group.loc[[selected_idx]]])
                         
                         if all_selected:
-                            st.success("✅ All duplicates resolved! You can now download the file.")
+                            st.success("✅ Təkrarlanan şagird adı yoxdur. Yükləyə bilərsiz!")
                             allow_download = True
                             final_filtered_df = final_df.reset_index(drop=True)
                             final_filtered_df.index = final_filtered_df.index + 1
@@ -217,16 +217,16 @@ if uploaded_file:
                             st.write(f"Final data ({len(final_filtered_df)} rows after removing duplicates):")
                             st.dataframe(final_display_df, use_container_width=True, height=400)
                         else:
-                            st.error("❌ Please select one row from each duplicate group before downloading.")
+                            st.error("❌ Yükləməzdən əvvəl təkrarları düzəldin")
                             allow_download = False
                             final_filtered_df = filtered_df
                     else:
-                        st.success("✅ No duplicate Email Addresses found!")
+                        st.success("✅ Təkralanan şagird tapılmadı")
                         allow_download = True
                         final_filtered_df = filtered_df
             else:
                 filtered_df = df
-                st.write(f"All data ({len(filtered_df)} rows):")
+                st.write(f"Bütün ({len(filtered_df)} sıralar):")
                 
                 try:
                     display_df = filtered_df.copy()
@@ -356,10 +356,10 @@ if uploaded_file:
                     download_filename = f"{trimmed_name}{filter_part}.xlsx"
                     
                     st.download_button(
-                        label="Download filtered Excel",
+                        label="Hazır Exceli yüklə",
                         data=excel_data,
                         file_name=download_filename,
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     )
             else:
-                st.error("❌ Cannot download: Please resolve all duplicate Email Addresses first.")
+                st.error("❌ Yükləmək olmaz. Təkrarları aradan qaldırın.")
