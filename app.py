@@ -153,11 +153,26 @@ if uploaded_file:
                 st.error(f"Error displaying filtered data: {e}")
             
             # Excel download function
-            def to_excel(df):
+            def to_excel(df, title):
                 output = BytesIO()
                 try:
                     with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                        df.to_excel(writer, index=False, sheet_name='FilteredData')
+                        # Write the dataframe starting from row 3 (to leave room for title and headers)
+                        df.to_excel(writer, index=False, sheet_name='FilteredData', startrow=2, startcol=3)
+                        
+                        # Get the workbook and worksheet to add the title
+                        workbook = writer.book
+                        worksheet = writer.sheets['FilteredData']
+                        
+                        # Add the title in cell D1
+                        if title:
+                            worksheet.cell(row=1, column=4, value=title)
+                        
+                        # Add column headers in row 2 (columns D, G, H, M, N, O positions)
+                        header_positions = [4, 7, 8, 13, 14, 15]  # D, G, H, M, N, O
+                        for i, (header, col_pos) in enumerate(zip(df.columns, header_positions)):
+                            worksheet.cell(row=2, column=col_pos, value=header)
+                    
                     output.seek(0)
                     return output
                 except Exception as e:
@@ -165,7 +180,7 @@ if uploaded_file:
                     return None
             
             # Create download button
-            excel_data = to_excel(filtered_df)
+            excel_data = to_excel(filtered_df, title_cell)
             if excel_data:
                 st.download_button(
                     label="Download filtered Excel",
