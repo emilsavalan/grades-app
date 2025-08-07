@@ -40,14 +40,42 @@ if uploaded_file:
         
         selected_headers.append(unique_header)
     
-    # Read data starting from row 3 to last row for these columns (since row 2 has headers)
+    # First, find which column index corresponds to "Assignments"
+    assignments_col_index = None
+    assignments_excel_col = None
+    for i, header in enumerate(raw_headers):
+        if header and "assignment" in str(header).lower():
+            assignments_col_index = i
+            assignments_excel_col = cols_to_copy[i]
+            break
+    
+    # Read data starting from row 3, filtering for "riyaziyyat" in Assignments column
     data = []
+    filtered_rows_count = 0
+    total_rows_count = 0
+    
     for row in range(3, ws.max_row + 1):  # Start from row 3 since row 2 has headers
+        total_rows_count += 1
         row_values = [ws.cell(row=row, column=col).value for col in cols_to_copy]
-        data.append(row_values)
+        
+        # Check if this row should be included (contains "riyaziyyat" in assignments column)
+        if assignments_col_index is not None:
+            assignments_value = row_values[assignments_col_index]
+            if assignments_value and isinstance(assignments_value, str):
+                # Check for both "riyaziyyat" and "Riyyaziyyat" (case insensitive)
+                if "riyaziyyat" in assignments_value.lower():
+                    data.append(row_values)
+                    filtered_rows_count += 1
+        else:
+            # If assignments column not found, include all rows
+            data.append(row_values)
     
     # Create DataFrame with unique headers
     df = pd.DataFrame(data, columns=selected_headers)
+    
+    st.write(f"Total rows processed: {total_rows_count}")
+    st.write(f"Rows containing 'riyaziyyat': {filtered_rows_count}")
+    st.write(f"Rows copied to new file: {len(df)}")
     
     st.write("Extracted headers:", selected_headers)
     st.write("Raw headers from Excel:", raw_headers)
