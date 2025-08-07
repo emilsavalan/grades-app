@@ -189,8 +189,16 @@ if uploaded_file:
                                     
                                     # First add up to 3 regular columns
                                     for col in group.columns[:3]:
-                                        val = str(row[col])[:20] if row[col] is not None else "None"
-                                        summary_parts.append(f"**{col}:** {val}")
+                                        val = row[col]
+                                        # Format percentage columns
+                                        if col and ("percent" in col.lower() or "%" in str(col).lower()):
+                                            if val is not None and isinstance(val, (int, float)):
+                                                formatted_val = f"{val * 100:.1f}%"
+                                            else:
+                                                formatted_val = "None"
+                                        else:
+                                            formatted_val = str(val)[:20] if val is not None else "None"
+                                        summary_parts.append(f"**{col}:** {formatted_val}")
                                     
                                     # Add Points column if it exists and not already included
                                     points_col = None
@@ -200,8 +208,16 @@ if uploaded_file:
                                             break
                                     
                                     if points_col and points_col not in group.columns[:3]:
-                                        points_val = str(row[points_col]) if row[points_col] is not None else "None"
-                                        summary_parts.append(f"**{points_col}:** {points_val}")
+                                        points_val = row[points_col]
+                                        # Check if points column is also a percentage
+                                        if "percent" in points_col.lower() or "%" in points_col.lower():
+                                            if points_val is not None and isinstance(points_val, (int, float)):
+                                                formatted_points = f"{points_val * 100:.1f}%"
+                                            else:
+                                                formatted_points = "None"
+                                        else:
+                                            formatted_points = str(points_val) if points_val is not None else "None"
+                                        summary_parts.append(f"**{points_col}:** {formatted_points}")
                                     
                                     summary = "\n\n".join(summary_parts)
                                     
