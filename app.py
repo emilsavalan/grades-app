@@ -23,9 +23,9 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 # Your desired translations
-translated_drag_and_drop = "Dosyanızı buraya sürükleyip bırakın"
-translated_limit = "Dosya başına 200MB limiti • XLSX"
-translated_browse_files = "Dosyalara gözat"
+translated_drag_and_drop = "Qiymətlər olan Exceli bura yükləyin"
+translated_limit = " "
+translated_browse_files = "Faylı seç"
 
 # Custom CSS to hide the original text and replace it with your translated text
 st.markdown(
