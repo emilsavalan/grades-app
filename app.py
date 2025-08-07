@@ -3,6 +3,23 @@ import pandas as pd
 from io import BytesIO
 import openpyxl
 
+# Set page config to wide mode
+st.set_page_config(
+    page_title="Filter Excel by Assignments",
+    layout="wide"  # This makes the app use the full width of the browser
+)
+
+# Custom CSS to make it even wider if needed
+st.markdown("""
+    <style>
+    .main .block-container {
+        max-width: 95%;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 st.title("Filter Excel by Assignments")
 
 uploaded_file = st.file_uploader("Upload Excel file (.xlsx)", type=["xlsx"])
@@ -130,7 +147,7 @@ if uploaded_file:
                 st.dataframe(
                     filtered_df, 
                     use_container_width=True,  # Make it use full width
-                    height=800  # Set height to show more rows (approximately 40-50 rows)
+                    height=1200  # Set height to show more rows (approximately 40-50 rows)
                 )
             except Exception as e:
                 st.error(f"Error displaying filtered data: {e}")
