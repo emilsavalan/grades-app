@@ -266,7 +266,6 @@ if uploaded_file:
                         workbook = writer.book
                         worksheet = writer.sheets['FilteredData']
                         
-                        # Import new styling classes
                         from openpyxl.styles import Font, PatternFill
                         from openpyxl.utils import get_column_letter
 
@@ -285,21 +284,22 @@ if uploaded_file:
                                 cell.fill = header_fill
 
                         # Then, re-apply the specific bold font for the headers (row 2)
+                        # Add color='FFFFFF' for white text
                         header_row = worksheet[2]
                         for cell in header_row:
-                            cell.font = Font(name='Segoe UI', bold=True)
+                            cell.font = Font(name='Segoe UI', bold=True, color='FFFFFF')
 
                         # Finally, apply the specific, large font for the title (row 1)
+                        # Add color='FFFFFF' for white text
                         if title:
                             title_cell_obj = worksheet.cell(row=1, column=1, value=title)
-                            title_cell_obj.font = Font(name='Segoe UI', size=18, bold=True)
+                            title_cell_obj.font = Font(name='Segoe UI', size=18, bold=True, color='FFFFFF')
                         
                         # Manually set the width of the first column
-                        worksheet.column_dimensions['A'].width = 15  # Adjust this value as needed
+                        worksheet.column_dimensions['A'].width = 15
 
                         # Auto-fit other column widths
                         for i, column_name in enumerate(excel_df.columns):
-                            # Skip the first column, which we've already set
                             if i == 0:
                                 continue
                             max_length = 0
@@ -313,6 +313,10 @@ if uploaded_file:
                             adjusted_width = (max_length + 2)
                             worksheet.column_dimensions[column].width = adjusted_width
                         
+                        # ADDITION: Add auto-filters to the header row
+                        filter_range = f'A2:{get_column_letter(len(excel_df.columns))}2'
+                        worksheet.auto_filter.ref = filter_range
+
                         # Apply percentage formatting to percentage columns
                         if percentage_columns:
                             for col_name in percentage_columns:
@@ -329,7 +333,7 @@ if uploaded_file:
                     return output
                 except Exception as e:
                     st.error(f"Error creating Excel file: {e}")
-                    return None           
+                    return None       
             # Create download button (only if duplicates are resolved)
             if allow_download:
                 excel_data = to_excel(final_filtered_df, title_cell)
