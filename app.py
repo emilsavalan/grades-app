@@ -14,10 +14,14 @@ if uploaded_file:
     # Columns indexes for D,G,H,M,N,O (1-indexed: D=4, G=7, H=8, M=13, N=14, O=15)
     cols_to_copy = [4, 7, 8, 13, 14, 15]
     
-    # Get headers from row 1 for these columns
-    raw_headers = [ws.cell(row=1, column=col).value for col in cols_to_copy]
+    # Get title from row 1 (this is the merged title)
+    title_cell = ws.cell(row=1, column=4).value  # D column
+    st.write("Title from row 1:", title_cell)
     
-    # Create unique headers, handling None values and duplicates
+    # Get actual headers from row 2 for these columns
+    raw_headers = [ws.cell(row=2, column=col).value for col in cols_to_copy]
+    
+    # Clean up headers (remove None values and ensure they're strings)
     selected_headers = []
     for i, header in enumerate(raw_headers):
         if header is None or header == "":
@@ -36,9 +40,9 @@ if uploaded_file:
         
         selected_headers.append(unique_header)
     
-    # Read data starting from row 2 to last row for these columns
+    # Read data starting from row 3 to last row for these columns (since row 2 has headers)
     data = []
-    for row in range(2, ws.max_row + 1):
+    for row in range(3, ws.max_row + 1):  # Start from row 3 since row 2 has headers
         row_values = [ws.cell(row=row, column=col).value for col in cols_to_copy]
         data.append(row_values)
     
