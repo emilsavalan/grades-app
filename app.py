@@ -28,10 +28,38 @@ translated_limit = " "
 translated_browse_files = "Faylı seç"
 
 # Custom CSS to hide the original text and replace it with your translated text
+st.markdown(
+    """
+    <style>
+    [data-testid="stFileUploaderDropzone"] div div::before {
+        content: '""" + translated_drag_and_drop + """';
+        color: #6C757D; /* A color that looks similar to the original text */
+    }
+    [data-testid="stFileUploaderDropzone"] div div span {
+        display: none;
+    }
+    [data-testid="stFileUploaderDropzone"] div div::after {
+        content: '""" + translated_limit + """';
+        color: #6C757D;
+    }
+    a[data-testid="stFileUploadBrowseButton"] {
+        visibility: hidden;
+    }
+    a[data-testid="stFileUploadBrowseButton"]::after {
+        content: '""" + translated_browse_files + """';
+        visibility: visible;
+        
+    }
+
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 
 st.title("Excel Qiymətlər")
 
-uploaded_file = st.file_uploader("Exceli yüklə", type=["xlsx"], placeholder="sik")
+uploaded_file = st.file_uploader("Exceli yüklə", type=["xlsx"])
 
 if uploaded_file:
     wb = openpyxl.load_workbook(uploaded_file, data_only=True)
