@@ -348,15 +348,15 @@ if uploaded_file:
                     original_filename = uploaded_file.name
                     # Remove last 17 characters and file extension
                     base_name = original_filename.rsplit('.', 1)[0]  # Remove extension first
-                    if len(base_name) > 17:
-                        trimmed_name = base_name[:-17]  # Remove last 17 characters
+                    if len(base_name) > 20:
+                        trimmed_name = base_name[:-20]  # Remove last 17 characters
                     else:
                         trimmed_name = base_name
                     
                     # Get first 15 characters of first selected assignment
                     filter_part = ""
                     if selected_assignments:
-                        first_filter = str(selected_assignments[0])[:15]
+                        first_filter = str(selected_assignments[0])[:20]
                         filter_part = f"_{first_filter}"
                     
                     download_filename = f"{trimmed_name}{filter_part}.xlsx"
