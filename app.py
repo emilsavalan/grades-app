@@ -135,8 +135,17 @@ if uploaded_file:
                 
                 # Display filtered data with custom height and width
                 try:
+                    # Format percentage columns for display
+                    display_df = filtered_df.copy()
+                    for col in display_df.columns:
+                        if display_df[col].dtype in ['float64', 'float32', 'int64', 'int32']:
+                            # Check if column contains values that look like percentages (0-1 range)
+                            numeric_vals = display_df[col].dropna()
+                            if len(numeric_vals) > 0 and numeric_vals.min() >= 0 and numeric_vals.max() <= 1:
+                                display_df[col] = display_df[col].apply(lambda x: f"{x*100:.1f}%" if pd.notna(x) else x)
+                    
                     st.dataframe(
-                        filtered_df, 
+                        display_df, 
                         use_container_width=True,  # Make it use full width
                         height=800  # Set height to show more rows (approximately 40-50 rows)
                     )
@@ -241,8 +250,18 @@ if uploaded_file:
                             final_filtered_df = final_df.reset_index(drop=True)
                             # Reset index to start from 1 instead of 0
                             final_filtered_df.index = final_filtered_df.index + 1
+                            
+                            # Format percentage columns for final display
+                            final_display_df = final_filtered_df.copy()
+                            for col in final_display_df.columns:
+                                if final_display_df[col].dtype in ['float64', 'float32', 'int64', 'int32']:
+                                    # Check if column contains values that look like percentages (0-1 range)
+                                    numeric_vals = final_display_df[col].dropna()
+                                    if len(numeric_vals) > 0 and numeric_vals.min() >= 0 and numeric_vals.max() <= 1:
+                                        final_display_df[col] = final_display_df[col].apply(lambda x: f"{x*100:.1f}%" if pd.notna(x) else x)
+                            
                             st.write(f"Final data ({len(final_filtered_df)} rows after removing duplicates):")
-                            st.dataframe(final_filtered_df, use_container_width=True, height=400)
+                            st.dataframe(final_display_df, use_container_width=True, height=400)
                         else:
                             st.error("❌ Please select one row from each duplicate group before downloading.")
                             allow_download = False
@@ -257,8 +276,17 @@ if uploaded_file:
                 
                 # Display filtered data with custom height and width
                 try:
+                    # Format percentage columns for display
+                    display_df = filtered_df.copy()
+                    for col in display_df.columns:
+                        if display_df[col].dtype in ['float64', 'float32', 'int64', 'int32']:
+                            # Check if column contains values that look like percentages (0-1 range)
+                            numeric_vals = display_df[col].dropna()
+                            if len(numeric_vals) > 0 and numeric_vals.min() >= 0 and numeric_vals.max() <= 1:
+                                display_df[col] = display_df[col].apply(lambda x: f"{x*100:.1f}%" if pd.notna(x) else x)
+                    
                     st.dataframe(
-                        filtered_df, 
+                        display_df, 
                         use_container_width=True,  # Make it use full width
                         height=800  # Set height to show more rows (approximately 40-50 rows)
                     )
