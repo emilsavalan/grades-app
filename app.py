@@ -296,7 +296,8 @@ if uploaded_file:
                             title_cell_obj.font = Font(name='Segoe UI', size=18, bold=True, color='FFFFFF')
                         
                         # Manually set the width of the first column
-                        worksheet.column_dimensions['A'].width = 15
+                        worksheet.column_dimensions['A'].width = 30
+                        worksheet.column_dimensions['C'].width = 30
 
                         # Auto-fit other column widths
                         for i, column_name in enumerate(excel_df.columns):
