@@ -58,20 +58,24 @@ st.markdown(
 st.markdown(
     """
     <style>
-    /* This targets the main multiselect container and its children */
-    [data-testid="stMultiSelect"] div div div:nth-of-type(1) div:nth-of-type(1) div {
+    /* This targets the placeholder div within the multiselect */
+    [data-testid="stMultiSelect"] > div:nth-of-type(1) > div:nth-of-type(1) > div {
         visibility: hidden;
         position: relative;
     }
     
-    /* This inserts the translated text */
-    [data-testid="stMultiSelect"] div div div:nth-of-type(1) div:nth-of-type(1) div::before {
-        content: 'Lazım olan imtahanları seçin';
+    /* This inserts the translated placeholder text */
+    [data-testid="stMultiSelect"] > div:nth-of-type(1) > div:nth-of-type(1) > div::after {
+        content: 'Seçenekleri seçin';
         visibility: visible;
         position: absolute;
         top: 0;
         left: 0;
-        color: #6C757D; /* A default gray color */
+        color: #6C757D;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
     }
     </style>
     """,
