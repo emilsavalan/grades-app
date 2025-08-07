@@ -58,25 +58,25 @@ st.markdown(
 st.markdown(
     """
     <style>
-        /* This targets the 'Choose options' text */
-        .stMultiSelect [data-testid="stNoDataLabel"] {
-            visibility: hidden;
-            height: 0;
-            overflow: hidden;
-        }
-
-        /* This inserts the translated text using a pseudo-element */
-        .stMultiSelect [data-testid="stNoDataLabel"]::before {
-            visibility: visible;
-            content: 'Ödevleri filtrelemek için seçin';
-            color: #6C757D;
-        }
+    /* This targets the main multiselect container and its children */
+    [data-testid="stMultiSelect"] div div div:nth-of-type(1) div:nth-of-type(1) div {
+        visibility: hidden;
+        position: relative;
+    }
+    
+    /* This inserts the translated text */
+    [data-testid="stMultiSelect"] div div div:nth-of-type(1) div:nth-of-type(1) div::before {
+        content: 'Filtrelemek için Ödevleri Seçin';
+        visibility: visible;
+        position: absolute;
+        top: 0;
+        left: 0;
+        color: #6C757D; /* A default gray color */
+    }
     </style>
     """,
     unsafe_allow_html=True,
 )
-
-
 
 st.title("Excel Qiymətlər")
 
