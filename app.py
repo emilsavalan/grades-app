@@ -54,6 +54,30 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+st.markdown(
+    """
+    <style>
+        /* This targets the 'Choose options' text */
+        .stMultiSelect [data-testid="stNoDataLabel"] {
+            visibility: hidden;
+            height: 0;
+            overflow: hidden;
+        }
+
+        /* This inserts the translated text using a pseudo-element */
+        .stMultiSelect [data-testid="stNoDataLabel"]::before {
+            visibility: visible;
+            content: 'Ödevleri filtrelemek için seçin';
+            color: #6C757D;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+
+
 st.title("Excel Qiymətlər")
 
 uploaded_file = st.file_uploader("Exceli yüklə", type=["xlsx"])
