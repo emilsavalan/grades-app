@@ -50,8 +50,8 @@ st.markdown(
         visibility: visible;
         
     }
-    div[class="st-cp st-c4 st-ar st-cq st-cr st-cs"]::after {
-        content: '""" + translated_browse_files + """';
+    div[class="st-cp st-c4 st-ar st-cq st-cr st-cs"] {
+        content: 'İmtahanları seçin';
         visibility: visible;
     }
     </style>
