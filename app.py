@@ -50,7 +50,12 @@ st.markdown(
         visibility: visible;
         
     }
-    div[class="st-cp st-c4 st-ar st-cq st-cr st-cs"] {
+
+     div[class="st-cp st-c4 st-ar st-cq st-cr st-cs"] {
+        visibility: hidden;
+    }
+
+    div[class="st-cp st-c4 st-ar st-cq st-cr st-cs"]::after {
         content: 'İmtahanları seçin';
         visibility: visible;
     }
