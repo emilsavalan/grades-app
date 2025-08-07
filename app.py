@@ -66,7 +66,7 @@ st.markdown(
     
     /* This inserts the translated text */
     [data-testid="stMultiSelect"] div div div:nth-of-type(1) div:nth-of-type(1) div::before {
-        content: 'Filtrelemek için Ödevleri Seçin';
+        content: 'Lazım olan imtahanları seçin';
         visibility: visible;
         position: absolute;
         top: 0;
