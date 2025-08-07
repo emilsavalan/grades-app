@@ -5,11 +5,11 @@ import openpyxl
 
 # Set page config to wide mode
 st.set_page_config(
-    page_title="Excel",
+    page_title="Filter Excel by Assignments",
     layout="wide"  # This makes the app use the full width of the browser
 )
 
-# Custom CSS to make it even wider if needed
+# Custom CSS to make it even wider if needed and hide Streamlit elements
 st.markdown("""
     <style>
     .main .block-container {
@@ -17,6 +17,35 @@ st.markdown("""
         padding-left: 1rem;
         padding-right: 1rem;
     }
+    
+    /* Hide Streamlit branding and buttons */
+    .stDeployButton {display:none;}
+    footer {visibility: hidden;}
+    .stDecoration {display:none;}
+    header {visibility: hidden;}
+    #MainMenu {visibility: hidden;}
+    .stActionButton {display:none;}
+    
+    /* Hide the hamburger menu */
+    .css-14xtw13.e8zbici0 {display: none;}
+    
+    /* Hide "Made with Streamlit" */
+    .css-cio0hey {display: none;}
+    
+    /* Hide fork on GitHub */
+    .css-1dp5vir {display: none;}
+    
+    /* Hide view source button */
+    .css-1rs6os {display: none;}
+    
+    /* Hide deploy button */
+    .css-1vbkxwb {display: none;}
+    
+    /* Additional hiding for various Streamlit UI elements */
+    .css-1v0mbdj > img {display: none;}
+    .block-container > div:first-child {display: none;}
+    .css-18ni7ap {display: none;}
+    .css-1y4p8pa {display: none;}
     </style>
     """, unsafe_allow_html=True)
 
@@ -348,15 +377,15 @@ if uploaded_file:
                     original_filename = uploaded_file.name
                     # Remove last 17 characters and file extension
                     base_name = original_filename.rsplit('.', 1)[0]  # Remove extension first
-                    if len(base_name) > 20:
-                        trimmed_name = base_name[:-20]  # Remove last 17 characters
+                    if len(base_name) > 17:
+                        trimmed_name = base_name[:-17]  # Remove last 17 characters
                     else:
                         trimmed_name = base_name
                     
                     # Get first 15 characters of first selected assignment
                     filter_part = ""
                     if selected_assignments:
-                        first_filter = str(selected_assignments[0])[:20]
+                        first_filter = str(selected_assignments[0])[:15]
                         filter_part = f"_{first_filter}"
                     
                     download_filename = f"{trimmed_name}{filter_part}.xlsx"
