@@ -45,7 +45,7 @@ st.markdown(
     # button[data-testid="stBaseButton-secondary"] {
     #     visibility: hidden;
     # }
-    button[data-testid="stBaseButton-secondary"] {
+   [data-testid="stBaseButton-secondary"]::after {
         content: '""" + translated_browse_files + """';
         visibility: visible;
         
