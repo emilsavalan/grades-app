@@ -266,29 +266,42 @@ if uploaded_file:
                         workbook = writer.book
                         worksheet = writer.sheets['FilteredData']
                         
-                        from openpyxl.styles import Font
+                        # Import new styling classes
+                        from openpyxl.styles import Font, PatternFill
                         from openpyxl.utils import get_column_letter
 
-                        # Define the font style for the entire content
+                        # Define the general font and a fill style with the requested color
                         content_font = Font(name='Segoe UI')
-                        
-                        # 1. First, iterate through all cells to apply the general font
+                        header_fill = PatternFill(start_color='5B5FC7', end_color='5B5FC7', fill_type='solid')
+
+                        # First, iterate through all cells to apply the general font
                         for row in worksheet.iter_rows():
                             for cell in row:
                                 cell.font = content_font
                         
-                        # 2. Then, re-apply the specific, bold font for the headers (row 2)
+                        # Apply the color fill to the first two rows
+                        for row in worksheet.iter_rows(min_row=1, max_row=2):
+                            for cell in row:
+                                cell.fill = header_fill
+
+                        # Then, re-apply the specific bold font for the headers (row 2)
                         header_row = worksheet[2]
                         for cell in header_row:
                             cell.font = Font(name='Segoe UI', bold=True)
 
-                        # 3. Finally, apply the specific, large font for the title (row 1)
+                        # Finally, apply the specific, large font for the title (row 1)
                         if title:
                             title_cell_obj = worksheet.cell(row=1, column=1, value=title)
                             title_cell_obj.font = Font(name='Segoe UI', size=18, bold=True)
+                        
+                        # Manually set the width of the first column
+                        worksheet.column_dimensions['A'].width = 15  # Adjust this value as needed
 
-                        # 4. Fit column widths
+                        # Auto-fit other column widths
                         for i, column_name in enumerate(excel_df.columns):
+                            # Skip the first column, which we've already set
+                            if i == 0:
+                                continue
                             max_length = 0
                             column = get_column_letter(i + 1)
                             for cell in worksheet[column]:
