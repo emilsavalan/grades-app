@@ -344,10 +344,27 @@ if uploaded_file:
             if allow_download:
                 excel_data = to_excel(final_filtered_df, title_cell)
                 if excel_data:
+                    # Create dynamic filename
+                    original_filename = uploaded_file.name
+                    # Remove last 17 characters and file extension
+                    base_name = original_filename.rsplit('.', 1)[0]  # Remove extension first
+                    if len(base_name) > 17:
+                        trimmed_name = base_name[:-17]  # Remove last 17 characters
+                    else:
+                        trimmed_name = base_name
+                    
+                    # Get first 15 characters of first selected assignment
+                    filter_part = ""
+                    if selected_assignments:
+                        first_filter = str(selected_assignments[0])[:15]
+                        filter_part = f"_{first_filter}"
+                    
+                    download_filename = f"{trimmed_name}{filter_part}.xlsx"
+                    
                     st.download_button(
                         label="Download filtered Excel",
                         data=excel_data,
-                        file_name="filtered_assignments.xlsx",
+                        file_name=download_filename,
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     )
             else:
