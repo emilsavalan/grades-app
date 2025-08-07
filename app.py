@@ -5,7 +5,7 @@ import openpyxl
 
 # Set page config to wide mode
 st.set_page_config(
-    page_title="Filter Excel by Assignments",
+    page_title="Excel",
     layout="wide"  # This makes the app use the full width of the browser
 )
 
