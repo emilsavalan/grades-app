@@ -98,13 +98,7 @@ if uploaded_file:
     st.write("Raw headers from Excel:", raw_headers)
     
     # Display sample data (handle potential display issues)
-    try:
-        st.write("Sample data:")
-        st.dataframe(df.head())
-    except Exception as e:
-        st.error(f"Error displaying data: {e}")
-        st.write("DataFrame shape:", df.shape)
-        st.write("DataFrame columns:", df.columns.tolist())
+    # Removed sample data display as requested
     
     # Find column with header "Assignments" (case insensitive)
     assignments_col = None
@@ -138,92 +132,116 @@ if uploaded_file:
                 mask = df[assignments_col].astype(str).isin(selected_assignments)
                 filtered_df = df[mask]
                 st.write(f"Filtered data ({len(filtered_df)} rows):")
+                
+                # Display filtered data with custom height and width
+                try:
+                    st.dataframe(
+                        filtered_df, 
+                        use_container_width=True,  # Make it use full width
+                        height=800  # Set height to show more rows (approximately 40-50 rows)
+                    )
+                except Exception as e:
+                    st.error(f"Error displaying filtered data: {e}")
+                
+                # Check for duplicates in Email Address column ONLY after user filters
+                email_col = None
+                for col_name in selected_headers:
+                    if col_name and "email" in col_name.lower():
+                        email_col = col_name
+                        break
+                
+                if email_col is None:
+                    st.warning("Email Address column not found. Download is disabled.")
+                    allow_download = False
+                else:
+                    # Find duplicates
+                    duplicates_mask = filtered_df.duplicated(subset=[email_col], keep=False)
+                    duplicated_df = filtered_df[duplicates_mask]
+                    
+                    if len(duplicated_df) > 0:
+                        st.warning(f"⚠️ Found {len(duplicated_df)} rows with duplicate Email Addresses!")
+                        
+                        # Group duplicates by email address
+                        duplicate_groups = duplicated_df.groupby(email_col)
+                        
+                        st.subheader("Duplicate Email Addresses - Click to select one row from each group:")
+                        
+                        # Initialize session state for selections
+                        if 'selected_duplicates' not in st.session_state:
+                            st.session_state.selected_duplicates = {}
+                        
+                        final_df = filtered_df[~duplicates_mask].copy()  # Start with non-duplicates
+                        all_selected = True
+                        
+                        for email, group in duplicate_groups:
+                            st.write(f"**Email: {email}** ({len(group)} duplicates)")
+                            
+                            # Create interactive selection blocks
+                            cols = st.columns(len(group))
+                            
+                            for i, (idx, row) in enumerate(group.iterrows()):
+                                with cols[i]:
+                                    # Check if this row is selected
+                                    is_selected = st.session_state.selected_duplicates.get(email) == idx
+                                    
+                                    # Create summary for the block
+                                    summary_parts = []
+                                    for col in group.columns[:3]:  # Show first 3 columns
+                                        val = str(row[col])[:20] if row[col] is not None else "None"
+                                        summary_parts.append(f"**{col}:** {val}")
+                                    summary = "\n\n".join(summary_parts)
+                                    
+                                    # Color based on selection
+                                    if is_selected:
+                                        st.success(f"✅ **SELECTED**\n\n**Row {idx}**\n\n{summary}")
+                                    else:
+                                        st.error(f"❌ **Row {idx}**\n\n{summary}")
+                                    
+                                    # Selection button
+                                    if st.button(f"Select Row {idx}", key=f"select_{email}_{idx}"):
+                                        st.session_state.selected_duplicates[email] = idx
+                                        st.rerun()
+                            
+                            # Check if this group has a selection
+                            if email not in st.session_state.selected_duplicates:
+                                all_selected = False
+                            else:
+                                # Add selected row to final dataframe
+                                selected_idx = st.session_state.selected_duplicates[email]
+                                final_df = pd.concat([final_df, group.loc[[selected_idx]]])
+                        
+                        # Check if all duplicates are resolved
+                        if all_selected:
+                            st.success("✅ All duplicates resolved! You can now download the file.")
+                            allow_download = True
+                            final_filtered_df = final_df.reset_index(drop=True)
+                            st.write(f"Final data ({len(final_filtered_df)} rows after removing duplicates):")
+                            st.dataframe(final_filtered_df, use_container_width=True, height=400)
+                        else:
+                            st.error("❌ Please select one row from each duplicate group before downloading.")
+                            allow_download = False
+                            final_filtered_df = filtered_df
+                    else:
+                        st.success("✅ No duplicate Email Addresses found!")
+                        allow_download = True
+                        final_filtered_df = filtered_df
             else:
                 filtered_df = df
                 st.write(f"All data ({len(filtered_df)} rows):")
-            
-            # Display filtered data with custom height and width
-            try:
-                st.dataframe(
-                    filtered_df, 
-                    use_container_width=True,  # Make it use full width
-                    height=800  # Set height to show more rows (approximately 40-50 rows)
-                )
-            except Exception as e:
-                st.error(f"Error displaying filtered data: {e}")
-            
-            # Check for duplicates in Email Address column
-            email_col = None
-            for col_name in selected_headers:
-                if col_name and "email" in col_name.lower():
-                    email_col = col_name
-                    break
-            
-            if email_col is None:
-                st.warning("Email Address column not found. Download is disabled.")
-                allow_download = False
-            else:
-                # Find duplicates
-                duplicates_mask = filtered_df.duplicated(subset=[email_col], keep=False)
-                duplicated_df = filtered_df[duplicates_mask]
                 
-                if len(duplicated_df) > 0:
-                    st.warning(f"⚠️ Found {len(duplicated_df)} rows with duplicate Email Addresses!")
-                    
-                    # Group duplicates by email address
-                    duplicate_groups = duplicated_df.groupby(email_col)
-                    
-                    st.subheader("Duplicate Email Addresses - Select one row from each group:")
-                    
-                    selected_indices = []
-                    final_df = filtered_df[~duplicates_mask].copy()  # Start with non-duplicates
-                    
-                    for email, group in duplicate_groups:
-                        st.write(f"**Email: {email}** ({len(group)} duplicates)")
-                        
-                        # Display the duplicate group with highlighting
-                        st.dataframe(
-                            group.style.highlight_max(axis=0, color='lightcoral'),
-                            use_container_width=True
-                        )
-                        
-                        # Let user select which row to keep
-                        options = []
-                        for idx, row in group.iterrows():
-                            # Create a summary of the row for selection
-                            summary_parts = []
-                            for col in group.columns[:3]:  # Show first 3 columns as summary
-                                val = str(row[col])[:30] if row[col] is not None else "None"
-                                summary_parts.append(f"{col}: {val}")
-                            summary = " | ".join(summary_parts)
-                            options.append((idx, f"Row {idx}: {summary}"))
-                        
-                        selected_idx = st.selectbox(
-                            f"Select row to keep for {email}:",
-                            options=[opt[0] for opt in options],
-                            format_func=lambda x: next(opt[1] for opt in options if opt[0] == x),
-                            key=f"select_{email}"
-                        )
-                        
-                        if selected_idx is not None:
-                            selected_indices.append(selected_idx)
-                            final_df = pd.concat([final_df, group.loc[[selected_idx]]])
-                    
-                    # Check if all duplicates are resolved
-                    if len(selected_indices) == len(duplicate_groups):
-                        st.success("✅ All duplicates resolved! You can now download the file.")
-                        allow_download = True
-                        final_filtered_df = final_df.reset_index(drop=True)
-                        st.write(f"Final data ({len(final_filtered_df)} rows after removing duplicates):")
-                        st.dataframe(final_filtered_df, use_container_width=True, height=400)
-                    else:
-                        st.error("❌ Please select one row from each duplicate group before downloading.")
-                        allow_download = False
-                        final_filtered_df = filtered_df
-                else:
-                    st.success("✅ No duplicate Email Addresses found!")
-                    allow_download = True
-                    final_filtered_df = filtered_df
+                # Display filtered data with custom height and width
+                try:
+                    st.dataframe(
+                        filtered_df, 
+                        use_container_width=True,  # Make it use full width
+                        height=800  # Set height to show more rows (approximately 40-50 rows)
+                    )
+                except Exception as e:
+                    st.error(f"Error displaying filtered data: {e}")
+                
+                # Don't check for duplicates until user filters
+                allow_download = True
+                final_filtered_df = filtered_df
             
             # Excel download function
             def to_excel(df, title):
