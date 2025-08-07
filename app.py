@@ -303,6 +303,8 @@ if uploaded_file:
                 try:
                     # Create a copy and format percentage columns for Excel
                     excel_df = df.copy()
+                    percentage_columns = []
+                    
                     for col in excel_df.columns:
                         if excel_df[col].dtype in ['float64', 'float32', 'int64', 'int32']:
                             # Check if column contains values that look like percentages (0-1 range)
@@ -310,6 +312,7 @@ if uploaded_file:
                             if len(numeric_vals) > 0 and numeric_vals.min() >= 0 and numeric_vals.max() <= 1:
                                 # Convert to percentage format (multiply by 100)
                                 excel_df[col] = excel_df[col] * 100
+                                percentage_columns.append(col)
                     
                     with pd.ExcelWriter(output, engine='openpyxl') as writer:
                         # Write the dataframe starting from row 2, column A (no empty columns)
@@ -324,26 +327,19 @@ if uploaded_file:
                             worksheet.cell(row=1, column=1, value=title)
                         
                         # Apply percentage formatting to percentage columns
-                        from openpyxl.styles import NamedStyle
-                        
-                        # Create percentage style if it doesn't exist
-                        try:
-                            percentage_style = workbook.named_styles['Percent']
-                        except KeyError:
-                            percentage_style = NamedStyle(name='Percent')
-                            percentage_style.number_format = '0.0%'
-                            workbook.add_named_style(percentage_style)
-                        
-                        # Apply percentage formatting to appropriate columns
-                        for col_idx, col in enumerate(excel_df.columns, 1):
-                            if excel_df[col].dtype in ['float64', 'float32', 'int64', 'int32']:
-                                # Check if this was a percentage column
-                                original_vals = df[col].dropna()
-                                if len(original_vals) > 0 and original_vals.min() >= 0 and original_vals.max() <= 1:
-                                    # Apply percentage format to the entire column (starting from row 3, which is data)
-                                    for row in range(3, len(excel_df) + 3):  # +3 because title is row 1, header is row 2
+                        if percentage_columns:
+                            for col_name in percentage_columns:
+                                try:
+                                    # Find column index
+                                    col_idx = list(excel_df.columns).index(col_name) + 1  # +1 for Excel 1-based indexing
+                                    
+                                    # Apply percentage format to the data rows
+                                    for row in range(3, len(excel_df) + 3):  # Start from row 3 (data rows)
                                         cell = worksheet.cell(row=row, column=col_idx)
-                                        cell.number_format = '0.0%'
+                                        if cell.value is not None:
+                                            cell.number_format = '0.0%'
+                                except Exception as col_error:
+                                    print(f"Error formatting column {col_name}: {col_error}")
                     
                     output.seek(0)
                     return output
