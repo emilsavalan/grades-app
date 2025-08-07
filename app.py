@@ -51,14 +51,6 @@ st.markdown(
         
     }
 
-     div[class="st-cp st-c4 st-ar st-cq st-cr st-cs"] {
-        visibility: hidden;
-    }
-
-    div[class="st-cp st-c4 st-ar st-cq st-cr st-cs"]::after {
-        content: 'İmtahanları seçin';
-        visibility: visible;
-    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -142,7 +134,7 @@ if uploaded_file:
         else:
             selected_assignments = st.multiselect(
                 "İmtahanları seç",
-                placeholder="İmtahanları seçin"
+                placeholder="İmtahanları seçin",
                 assignments_options,
                 help="Bir və ya daha çox imtahan seç"
             )
