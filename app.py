@@ -14,9 +14,9 @@ if uploaded_file:
     # Columns indexes for D,G,H,M,N,O (1-indexed: D=4, G=7, H=8, M=13, N=14, O=15)
     cols_to_copy = [4, 7, 8, 13, 14, 15]
     
-    # Get title from row 1 (this is the merged title)
-    title_cell = ws.cell(row=1, column=4).value  # D column
-    st.write("Title from row 1:", title_cell)
+    # Get title from row 1, column D
+    title_cell = ws.cell(row=1, column=4).value  # D1
+    st.write("Title from D1:", title_cell)
     
     # Get actual headers from row 2 for these columns
     raw_headers = [ws.cell(row=2, column=col).value for col in cols_to_copy]
