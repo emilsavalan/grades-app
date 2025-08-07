@@ -289,7 +289,7 @@ if uploaded_file:
                             title_cell_obj.font = Font(name='Segoe UI', size=18, bold=True, color='FFFFFF')
                         
                         # Use a dictionary to manage manual widths
-                        manual_widths = {'A': 30, 'C': 15} # <--- You can adjust this value for column C
+                        manual_widths = {'A': 30, 'C': 25} # <--- You can adjust this value for column C
 
                         # Loop through all columns to set width
                         for i, column_name in enumerate(excel_df.columns):
