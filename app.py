@@ -400,10 +400,9 @@ if uploaded_file:
 
                     styles = getSampleStyleSheet()
 
-                    # Use only Noto Sans fonts
                     try:
-                        pdfmetrics.registerFont(TTFont('NotoSans-Regular', 'fonts/segoeuithis.ttf'))
-                        pdfmetrics.registerFont(TTFont('NotoSans-Bold', 'fonts/segoeuithibd.ttf'))
+                        pdfmetrics.registerFont(TTFont('NotoSans-Regular', 'fonts/NotoSans-Regular.ttf'))
+                        pdfmetrics.registerFont(TTFont('NotoSans-Bold', 'fonts/NotoSans-Bold.ttf'))
                         font_name = 'NotoSans-Regular'
                         font_name_bold = 'NotoSans-Bold'
                     except Exception as e:
@@ -422,7 +421,6 @@ if uploaded_file:
                     )
 
                     story = []
-
                     if title:
                         title_text = str(title) if title else ""
                         title_para = Paragraph(title_text, title_style)
@@ -431,77 +429,64 @@ if uploaded_file:
 
                     pdf_df = df.copy()
 
-                    # --- MODIFICATION START: Dynamically find all long-content columns ---
                     long_content_col_indices = []
+                    short_content_col_indices = []
                     for i, col in enumerate(pdf_df.columns):
                         col_name_lower = str(col).lower()
                         if "assignment" in col_name_lower or "email" in col_name_lower:
                             long_content_col_indices.append(i)
-                    # --- MODIFICATION END ---
+                        else:
+                            short_content_col_indices.append(i)
 
-                    # Handle percentage formatting
                     for col in pdf_df.columns:
                         if pdf_df[col].dtype in ['float64', 'float32', 'int64', 'int32']:
                             numeric_vals = pdf_df[col].dropna()
                             if len(numeric_vals) > 0 and numeric_vals.min() >= 0 and numeric_vals.max() <= 1:
                                 pdf_df[col] = pdf_df[col].apply(lambda x: f"{x*100:.1f}%" if pd.notna(x) else "")
 
-                    # Prepare table data with text wrapping for long content
                     data = []
-
-                    # Headers
-                    headers = []
-                    for col in pdf_df.columns:
-                        header_text = str(col) if col is not None else ""
-                        headers.append(header_text)
+                    headers = [str(col) if col is not None else "" for col in pdf_df.columns]
                     data.append(headers)
 
-                    # Data rows with text wrapping
                     for _, row in pdf_df.iterrows():
                         row_data = []
                         for i, val in enumerate(row):
                             cell_text = str(val) if val is not None else ""
                             
-                            # --- MODIFICATION START: Apply Paragraph for all long-content columns ---
-                            if i in long_content_col_indices and len(cell_text) > 20: # Threshold for wrapping long text
-                                # Use Paragraph for text wrapping with smaller font size
+                            if i in long_content_col_indices and len(cell_text) > 20:
                                 wrapped_text = Paragraph(cell_text, ParagraphStyle(
                                     'CellStyle',
                                     fontName=font_name,
-                                    fontSize=8, # Smaller font size for long values
-                                    alignment=0,  # Left alignment
+                                    fontSize=8,
+                                    alignment=0,
                                     leading=10
                                 ))
                                 row_data.append(wrapped_text)
                             else:
                                 row_data.append(cell_text)
-                            # --- MODIFICATION END ---
                         data.append(row_data)
 
                     page_width = A4[0] - 2 * 0.5 * inch
                     num_cols = len(pdf_df.columns)
-
-                    # --- MODIFICATION START: Calculate dynamic widths for all long-content columns ---
-                    col_widths = []
-                    num_long_cols = len(long_content_col_indices)
                     
+                    # --- REVISED LOGIC START: Give short columns a fixed width, then distribute the rest ---
+                    col_widths = [0] * num_cols
+                    fixed_short_width = 1.0 * inch  # A reasonable, minimal width for short columns
+
+                    # Assign fixed widths to short columns first
+                    for i in short_content_col_indices:
+                        col_widths[i] = fixed_short_width
+
+                    # Calculate remaining width
+                    remaining_width = page_width - (len(short_content_col_indices) * fixed_short_width)
+
+                    # Distribute remaining width among long columns
+                    num_long_cols = len(long_content_col_indices)
                     if num_long_cols > 0:
-                        # Allocate 25% of width to each long column
-                        long_col_width = (page_width * 0.25) / num_long_cols 
-                        # Distribute the rest among other columns
-                        remaining_width = page_width - (long_col_width * num_long_cols)
-                        num_other_cols = num_cols - num_long_cols
-                        other_col_width = remaining_width / num_other_cols if num_other_cols > 0 else 0
-                        
-                        for i in range(num_cols):
-                            if i in long_content_col_indices:
-                                col_widths.append(long_col_width)
-                            else:
-                                col_widths.append(other_col_width)
-                    else:
-                        # No long columns, use equal widths
-                        col_widths = [page_width / num_cols] * num_cols
-                    # --- MODIFICATION END ---
+                        long_col_width = remaining_width / num_long_cols
+                        for i in long_content_col_indices:
+                            col_widths[i] = long_col_width
+                    # --- REVISED LOGIC END ---
 
                     table = Table(data, colWidths=col_widths)
 
@@ -513,16 +498,19 @@ if uploaded_file:
                         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                         ('FONTSIZE', (0, 0), (-1, 0), 10),
                         ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                        ('FONTSIZE', (0, 1), (-1, -1), 9), # Slightly smaller default font size for body
+                        ('FONTSIZE', (0, 1), (-1, -1), 9),
                         ('GRID', (0, 0), (-1, -1), 1, colors.black),
                         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F2F2F2')]),
                     ]
 
-                    # Special alignment for long-content columns
                     for col_index in long_content_col_indices:
                         table_style.append(('ALIGN', (col_index, 1), (col_index, -1), 'LEFT'))
                         table_style.append(('VALIGN', (col_index, 1), (col_index, -1), 'TOP'))
+                    
+                    for col_index in short_content_col_indices:
+                        table_style.append(('ALIGN', (col_index, 1), (col_index, -1), 'CENTER'))
+                        table_style.append(('VALIGN', (col_index, 1), (col_index, -1), 'MIDDLE'))
 
                     table.setStyle(TableStyle(table_style))
 
