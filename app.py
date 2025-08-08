@@ -52,11 +52,7 @@ st.markdown(
         
     }
 
-  .main .block-container {
-        max-width: 95%;
-        padding-left: 1rem;
-        padding-right: 1rem;
-    }
+
     
     /* Multiselect fixes to prevent trimming */
     .stMultiSelect > div > div {
