@@ -11,8 +11,8 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-pdfmetrics.registerFont(TTFont('NotoSans-Regular', 'fonts/NotoSans-Regular.ttf'))
-pdfmetrics.registerFont(TTFont('NotoSans-Bold', 'fonts/NotoSans-Bold.ttf'))
+pdfmetrics.registerFont(TTFont('NotoSans-Regular', 'fonts/NotoSans-Regular.otf'))
+pdfmetrics.registerFont(TTFont('NotoSans-Bold', 'fonts/NotoSans-Bold.otf'))
 # Set page config to wide mode
 st.set_page_config(
     page_title="Excel Qiymətlər",
