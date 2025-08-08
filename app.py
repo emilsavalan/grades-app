@@ -577,10 +577,10 @@ if uploaded_file:
                     styles = getSampleStyleSheet()
 
                     try:
-                        pdfmetrics.registerFont(TTFont('NotoSans-Regular', 'fonts/segoeuithis.ttf'))
-                        pdfmetrics.registerFont(TTFont('NotoSans-Bold', 'fonts/segoeuithibd.ttf'))
-                        font_name = 'NotoSans-Regular'
-                        font_name_bold = 'NotoSans-Bold'
+                        pdfmetrics.registerFont(TTFont('Segoe UI', 'fonts/segoeuithis.ttf'))
+                        pdfmetrics.registerFont(TTFont('Segoe UI-Bold', 'fonts/segoeuithibd.ttf'))
+                        font_name = 'Segoe UI'
+                        font_name_bold = 'Segoe UI-Bold'
                     except Exception as e:
                         st.error(f"Noto Sans fonts could not be loaded: {e}")
                         st.error("Make sure fonts/NotoSans-Regular.ttf and fonts/NotoSans-Bold.ttf exist")
