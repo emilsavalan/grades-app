@@ -328,27 +328,27 @@ if uploaded_file:
                         workbook = writer.book
                         worksheet = writer.sheets['FilteredData']
 
-                        # content_font = Font(name='Segoe UI')
+                        content_font = Font(name='Segoe UI')
                         header_fill = PatternFill(start_color='5B5FC7', end_color='5B5FC7', fill_type='solid')
 
                         light_gray_fill = PatternFill(start_color='E7E7F7', end_color='E7E7F7', fill_type='solid')
                         white_fill = PatternFill(start_color='FFFFFF', end_color='FFFFFF', fill_type='solid')
 
-                        # for row in worksheet.iter_rows():
-                        #     for cell in row:
-                        #         cell.font = content_font
+                        for row in worksheet.iter_rows():
+                            for cell in row:
+                                cell.font = content_font
                         
                         for row in worksheet.iter_rows(min_row=1, max_row=2):
                             for cell in row:
                                 cell.fill = header_fill
 
                         header_row = worksheet[2]
-                        # for cell in header_row:
-                        #     cell.font = Font(name='Segoe UI', bold=True, color='FFFFFF')
+                        for cell in header_row:
+                            cell.font = Font(name='Segoe UI', bold=True, color='FFFFFF')
 
-                        # if title:
-                        #     title_cell_obj = worksheet.cell(row=1, column=1, value=title)
-                        #     title_cell_obj.font = Font(name='Segoe UI', size=18, bold=True, color='FFFFFF')
+                        if title:
+                            title_cell_obj = worksheet.cell(row=1, column=1, value=title)
+                            title_cell_obj.font = Font(name='Segoe UI', size=18, bold=True, color='FFFFFF')
                          
                         for row_index, row in enumerate(worksheet.iter_rows(min_row=3, max_row=len(excel_df) + 2)):
                             fill = light_gray_fill if row_index % 2 == 0 else white_fill
@@ -767,7 +767,10 @@ if uploaded_file:
                 if selected_assignments:
                     first_filter = str(selected_assignments[0])
                     filter_part = trim_until_variant(first_filter)
+                else 
+                    filter_part = "unfiltered"
                 
+
                 excel_filename = f"{trimmed_year}{filter_part}.xlsx"
                 pdf_filename = f"{trimmed_year}{filter_part}_dik.pdf"
                 pdf_landscape_filename = f"{trimmed_year}{filter_part}.pdf"
