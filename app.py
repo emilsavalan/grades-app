@@ -566,31 +566,162 @@ if uploaded_file:
                     st.error(f"PDF yaradılarkən xəta: {e}")
                     return None
 
+            def to_pdf_landscape(df, title):
+                output = BytesIO()
+                try:
+                    # Use landscape orientation - swap width and height of A4
+                    doc = SimpleDocTemplate(output, pagesize=(A4[1], A4[0]), topMargin=0.5*inch, bottomMargin=0.5*inch,
+                                          leftMargin=0.5*inch, rightMargin=0.5*inch)
+
+                    styles = getSampleStyleSheet()
+
+                    try:
+                        pdfmetrics.registerFont(TTFont('NotoSans-Regular', 'fonts/NotoSans-Regular.ttf'))
+                        pdfmetrics.registerFont(TTFont('NotoSans-Bold', 'fonts/NotoSans-Bold.ttf'))
+                        font_name = 'NotoSans-Regular'
+                        font_name_bold = 'NotoSans-Bold'
+                    except Exception as e:
+                        st.error(f"Noto Sans fonts could not be loaded: {e}")
+                        st.error("Make sure fonts/NotoSans-Regular.ttf and fonts/NotoSans-Bold.ttf exist")
+                        return None
+
+                    title_style = ParagraphStyle(
+                        'CustomTitle',
+                        fontName=font_name_bold,
+                        parent=styles['Heading1'],
+                        fontSize=16,
+                        spaceAfter=20,
+                        alignment=1,
+                        textColor=colors.HexColor('#5B5FC7')
+                    )
+
+                    story = []
+                    if title:
+                        title_text = str(title) if title else ""
+                        title_para = Paragraph(title_text, title_style)
+                        story.append(title_para)
+                        story.append(Spacer(1, 12))
+
+                    pdf_df = df.copy()
+
+                    # Remove problematic characters
+                    problematic_char = '\u0307' # Unicode for COMBINING DOT ABOVE
+                    for col in pdf_df.columns:
+                        if pd.api.types.is_string_dtype(pdf_df[col]):
+                            pdf_df[col] = pdf_df[col].astype(str).str.replace(problematic_char, '', regex=False)
+                    
+                    # Format percentage columns
+                    for col in pdf_df.columns:
+                        if pdf_df[col].dtype in ['float64', 'float32', 'int64', 'int32']:
+                            numeric_vals = pdf_df[col].dropna()
+                            if len(numeric_vals) > 0 and numeric_vals.min() >= 0 and numeric_vals.max() <= 1:
+                                pdf_df[col] = pdf_df[col].apply(lambda x: f"{x*100:.1f}%" if pd.notna(x) else "")
+                    
+                    # Simple paragraph style for all content
+                    content_style = ParagraphStyle(
+                        'ContentStyle',
+                        fontName=font_name,
+                        fontSize=10,
+                        alignment=0,
+                        leading=12
+                    )
+                    
+                    data = []
+                    headers = [str(col) if col is not None else "" for col in pdf_df.columns]
+                    data.append(headers)
+
+                    # Add data rows - wrap longer content in paragraphs
+                    for _, row in pdf_df.iterrows():
+                        row_data = []
+                        for val in row:
+                            cell_text = str(val) if val is not None else ""
+                            # Wrap longer text content in paragraphs for better formatting
+                            if len(cell_text) > 30:
+                                wrapped_text = Paragraph(cell_text, content_style)
+                                row_data.append(wrapped_text)
+                            else:
+                                row_data.append(cell_text)
+                        data.append(row_data)
+
+                    # Calculate page width for landscape (A4 height becomes width)
+                    page_width = A4[1] - 2 * 0.5 * inch
+                    num_cols = len(pdf_df.columns)
+                    
+                    # Simple equal column width distribution for landscape
+                    col_width = page_width / num_cols
+                    col_widths = [col_width] * num_cols
+
+                    table = Table(data, colWidths=col_widths)
+
+                    table_style = [
+                        ('FONTNAME', (0, 0), (-1, 0), font_name_bold),
+                        ('FONTNAME', (0, 1), (-1, -1), font_name),
+                        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#5B5FC7')),
+                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('FONTSIZE', (0, 0), (-1, 0), 11),
+                        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                        ('FONTSIZE', (0, 1), (-1, -1), 10),
+                        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F2F2F2')]),
+                    ]
+
+                    table.setStyle(TableStyle(table_style))
+                    story.append(table)
+
+                    footer_style = ParagraphStyle(
+                        'Footer',
+                        fontName=font_name,
+                        parent=styles['Normal'],
+                        fontSize=8,
+                        spaceAfter=12,
+                        alignment=1,
+                        textColor=colors.grey
+                    )
+
+                    story.append(Spacer(1, 20))
+                    footer_text = f"Nəticələr sayı: {len(pdf_df)} | Yaradılma tarixi: {pd.Timestamp.now().strftime('%d.%m.%Y %H:%M')}"
+                    footer_para = Paragraph(footer_text, footer_style)
+                    story.append(footer_para)
+
+                    doc.build(story)
+                    output.seek(0)
+                    return output
+
+                except Exception as e:
+                    st.error(f"PDF yaradılarkən xəta: {e}")
+                    return None
 
 
             # Create download buttons (only if duplicates are resolved)
             if allow_download:
                 excel_data = to_excel(final_filtered_df, title_cell)
                 pdf_data = to_pdf(final_filtered_df, title_cell)
+                pdf_landscape_data = to_pdf_landscape(final_filtered_df, title_cell)
                 
-                if excel_data and pdf_data:
-                    original_filename = uploaded_file.name
-                    base_name = original_filename.rsplit('.', 1)[0]
-                    if len(base_name) > 20:
-                        trimmed_name = base_name[:-20]
-                    else:
-                        trimmed_name = base_name
-                    
-                    filter_part = ""
-                    if selected_assignments:
-                        first_filter = str(selected_assignments[0])[:20]
-                        filter_part = f"_{first_filter}"
-                    
-                    excel_filename = f"{trimmed_name}{filter_part}.xlsx"
-                    pdf_filename = f"{trimmed_name}{filter_part}.pdf"
-                    
-                    col1, col2 = st.columns(2)
-                    
+                # Generate filenames
+                original_filename = uploaded_file.name
+                base_name = original_filename.rsplit('.', 1)[0]
+                if len(base_name) > 20:
+                    trimmed_name = base_name[:-20]
+                else:
+                    trimmed_name = base_name
+                
+                filter_part = ""
+                if selected_assignments:
+                    first_filter = str(selected_assignments[0])[:20]
+                    filter_part = f"_{first_filter}"
+                
+                excel_filename = f"{trimmed_name}{filter_part}.xlsx"
+                pdf_filename = f"{trimmed_name}{filter_part}.pdf"
+                pdf_landscape_filename = f"{trimmed_name}{filter_part}_landscape.pdf"
+                
+                # Create three columns for the buttons
+                col1, col2, col3 = st.columns(3)
+                
+                # Excel button
+                if excel_data:
                     with col1:
                         st.download_button(
                             label="📊 Excel faylını yüklə",
@@ -598,35 +729,33 @@ if uploaded_file:
                             file_name=excel_filename,
                             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                         )
-                    
+                
+                # PDF Portrait button
+                if pdf_data:
                     with col2:
                         st.download_button(
-                            label="📄 PDF faylını yüklə", 
+                            label="📄 PDF (Portrait)",
                             data=pdf_data,
                             file_name=pdf_filename,
                             mime="application/pdf"
                         )
-                elif excel_data:
-                    original_filename = uploaded_file.name
-                    base_name = original_filename.rsplit('.', 1)[0]
-                    if len(base_name) > 20:
-                        trimmed_name = base_name[:-20]
-                    else:
-                        trimmed_name = base_name
-                    
-                    filter_part = ""
-                    if selected_assignments:
-                        first_filter = str(selected_assignments[0])[:20]
-                        filter_part = f"_{first_filter}"
-                    
-                    download_filename = f"{trimmed_name}{filter_part}.xlsx"
-                    
-                    st.download_button(
-                        label="Hazır Exceli yüklə",
-                        data=excel_data,
-                        file_name=download_filename,
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                    )
-                    st.warning("PDF yaradıla bilmədi, yalnız Excel mövcuddur")
+                
+                # PDF Landscape button
+                if pdf_landscape_data:
+                    with col3:
+                        st.download_button(
+                            label="📄 PDF (Landscape)",
+                            data=pdf_landscape_data,
+                            file_name=pdf_landscape_filename,
+                            mime="application/pdf"
+                        )
+                
+                # Show warning if any format failed to generate
+                if not excel_data:
+                    st.warning("Excel faylı yaradıla bilmədi")
+                if not pdf_data:
+                    st.warning("PDF (Portrait) faylı yaradıla bilmədi")
+                if not pdf_landscape_data:
+                    st.warning("PDF (Landscape) faylı yaradıla bilmədi")
             else:
                 st.error("❌ Yükləmək olmaz. Təkrarları aradan qaldırın.")
