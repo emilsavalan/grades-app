@@ -51,17 +51,27 @@ st.markdown(
         visibility: visible;
         
     }
-/* Force multiselect chip container to be wider so full names are visible */
-div[data-baseweb="select"] > div {
-    max-width: none !important;
-    width: auto !important;
-}
 
-/* Also make each selected chip expand to fit content */
-div[data-baseweb="tag"] {
-    max-width: none !important;
-    white-space: normal !important;
-}
+  /* Make multiselect container wider and show full text */
+    .stMultiSelect > div > div > div {
+        max-width: none !important;
+        width: 100% !important;
+    }
+    
+    /* Make the selected items container wider */
+    .stMultiSelect > div > div > div > div {
+        max-width: none !important;
+        white-space: nowrap !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+    }
+    
+    /* Make individual selected tags wider */
+    .stMultiSelect > div > div > div > div > span {
+        max-width: none !important;
+        white-space: nowrap !important;
+        overflow: visible !important;
+    }
 
     </style>
     """,
