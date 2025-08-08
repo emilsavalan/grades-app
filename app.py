@@ -52,21 +52,30 @@ st.markdown(
         
     }
    
-.stMultiSelect {
-    /* Fix the container */
+   .stMultiSelect,
+.stMultiSelect > div > div,
+.stMultiSelect [data-baseweb="select"],
+.stMultiSelect [data-baseweb="popover"] {
     width: 100% !important;
+    min-width: 100% !important;
 }
 
-.stMultiSelect [data-baseweb="select"] {
-    /* Fix dimensions and ensure consistent height */
-    width: 100% !important;
+.stMultiSelect [data-baseweb="select"],
+.stMultiSelect [data-baseweb="select"] > div,
+.stMultiSelect [data-baseweb="select"] [data-baseweb="input"] {
     min-height: 38px !important;
 }
 
-.stMultiSelect [data-baseweb="tag"] {
-    /* Prevent text trimming in selected items */
+.stMultiSelect [data-baseweb="select"] > div {
+    flex-wrap: wrap !important;
+}
+
+.stMultiSelect [data-baseweb="tag"],
+.stMultiSelect [data-baseweb="tag"] span {
     max-width: none !important;
     white-space: nowrap !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
 }
 
     </style>
