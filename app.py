@@ -434,6 +434,13 @@ if uploaded_file:
                     
                     pdf_df = df.copy()
                     
+                    # Find assignments column index first (before any other processing)
+                    assignments_col_index = None
+                    for i, col in enumerate(pdf_df.columns):
+                        if col and "assignment" in str(col).lower():
+                            assignments_col_index = i
+                            break
+                    
                     # Handle percentage formatting
                     for col in pdf_df.columns:
                         if pdf_df[col].dtype in ['float64', 'float32', 'int64', 'int32']:
@@ -477,16 +484,7 @@ if uploaded_file:
                     page_width = A4[0] - 2 * 0.5 * inch
                     num_cols = len(pdf_df.columns)
                     
-                    # Initialize assignments_col_index
-                    assignments_col_index = None
-                    
-                    # Find assignments column first
-                    for i, col in enumerate(pdf_df.columns):
-                        if col and "assignment" in str(col).lower():
-                            assignments_col_index = i
-                            break
-                    
-                    # Calculate dynamic column widths based on content
+                    # Calculate dynamic column widths based on assignments column (already found above)
                     col_widths = []
                     if assignments_col_index is not None:
                         # If assignments column exists, give it 40% width
