@@ -2,8 +2,13 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 import openpyxl
-from openpyxl.styles import Font # <-- Ensure these are imported
-from openpyxl.utils import get_column_letter # <-- Ensure these are imported
+from openpyxl.styles import Font, PatternFill
+from openpyxl.utils import get_column_letter
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
 
 # Set page config to wide mode
 st.set_page_config(
@@ -11,8 +16,14 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom CSS to make it even wider if needed
-st.markdown("""
+# Your desired translations
+translated_drag_and_drop = "Qiymətlər olan Exceli bura yükləyin"
+translated_limit = " "
+translated_browse_files = "Faylı seç"
+
+# Custom CSS to make it even wider if needed and fix multiselect
+st.markdown(
+    """
     <style>
     .main .block-container {
         max-width: 95%;
@@ -20,20 +31,9 @@ st.markdown("""
         padding-right: 1rem;
     }
     
-    </style>
-    """, unsafe_allow_html=True)
-# Your desired translations
-translated_drag_and_drop = "Qiymətlər olan Exceli bura yükləyin"
-translated_limit = " "
-translated_browse_files = "Faylı seç"
-
-# Custom CSS to hide the original text and replace it with your translated text
-st.markdown(
-    """
-    <style>
     [data-testid="stFileUploaderDropzone"] div div::before {
         content: '""" + translated_drag_and_drop + """';
-        color: #6C757D; /* A color that looks similar to the original text */
+        color: #6C757D;
     }
     [data-testid="stFileUploaderDropzone"] div div span {
         display: none;
@@ -43,46 +43,44 @@ st.markdown(
         color: #6C757D;
     }
     [class="st-emotion-cache-r92n3i e7nj0r42"] {
-    font-size: 0;
-        position: relative;    }
-   [class="st-emotion-cache-r92n3i e7nj0r42"]::after {
+        font-size: 0;
+        position: relative;
+    }
+    [class="st-emotion-cache-r92n3i e7nj0r42"]::after {
         content: '""" + translated_browse_files + """';
-         font-size: 1rem;
+        font-size: 1rem;
         visibility: visible;
-        
     }
    
-   .stMultiSelect,
-.stMultiSelect > div > div,
-.stMultiSelect [data-baseweb="select"],
-.stMultiSelect [data-baseweb="popover"] {
-    width: 100% !important;
-    min-width: 100% !important;
-}
+    .stMultiSelect,
+    .stMultiSelect > div > div,
+    .stMultiSelect [data-baseweb="select"],
+    .stMultiSelect [data-baseweb="popover"] {
+        width: 100% !important;
+        min-width: 100% !important;
+    }
 
-.stMultiSelect [data-baseweb="select"],
-.stMultiSelect [data-baseweb="select"] > div,
-.stMultiSelect [data-baseweb="select"] [data-baseweb="input"] {
-    min-height: 38px !important;
-}
+    .stMultiSelect [data-baseweb="select"],
+    .stMultiSelect [data-baseweb="select"] > div,
+    .stMultiSelect [data-baseweb="select"] [data-baseweb="input"] {
+        min-height: 38px !important;
+    }
 
-.stMultiSelect [data-baseweb="select"] > div {
-    flex-wrap: wrap !important;
-}
+    .stMultiSelect [data-baseweb="select"] > div {
+        flex-wrap: wrap !important;
+    }
 
-.stMultiSelect [data-baseweb="tag"],
-.stMultiSelect [data-baseweb="tag"] span {
-    max-width: none !important;
-    white-space: nowrap !important;
-    overflow: visible !important;
-    text-overflow: clip !important;
-}
-
+    .stMultiSelect [data-baseweb="tag"],
+    .stMultiSelect [data-baseweb="tag"] span {
+        max-width: none !important;
+        white-space: nowrap !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
 )
-
 
 st.title("Excel Qiymətlər")
 
@@ -327,9 +325,6 @@ if uploaded_file:
                         
                         workbook = writer.book
                         worksheet = writer.sheets['FilteredData']
-                        
-                        from openpyxl.styles import Font, PatternFill
-                        from openpyxl.utils import get_column_letter
 
                         content_font = Font(name='Segoe UI')
                         header_fill = PatternFill(start_color='5B5FC7', end_color='5B5FC7', fill_type='solid')
@@ -352,24 +347,20 @@ if uploaded_file:
                         if title:
                             title_cell_obj = worksheet.cell(row=1, column=1, value=title)
                             title_cell_obj.font = Font(name='Segoe UI', size=18, bold=True, color='FFFFFF')
-                         # Add banded rows for the data
+                         
                         for row_index, row in enumerate(worksheet.iter_rows(min_row=3, max_row=len(excel_df) + 2)):
                             fill = light_gray_fill if row_index % 2 == 0 else white_fill
                             for cell in row:
                                 cell.fill = fill
 
-                        # Use a dictionary to manage manual widths
-                        manual_widths = {'A': 30, 'C': 35} # <--- You can adjust this value for column C
+                        manual_widths = {'A': 30, 'C': 35}
 
-                        # Loop through all columns to set width
                         for i, column_name in enumerate(excel_df.columns):
                             column_letter = get_column_letter(i + 1)
                             
-                            # Check if a manual width is set for this column
                             if column_letter in manual_widths:
                                 worksheet.column_dimensions[column_letter].width = manual_widths[column_letter]
                             else:
-                                # Otherwise, calculate auto-fit width
                                 max_length = 0
                                 for cell in worksheet[column_letter]:
                                     try:
@@ -398,11 +389,127 @@ if uploaded_file:
                     return output
                 except Exception as e:
                     st.error(f"Error creating Excel file: {e}")
-                    return None       
-            # Create download button (only if duplicates are resolved)
+                    return None
+            
+            # PDF download function
+            def to_pdf(df, title):
+                output = BytesIO()
+                try:
+                    doc = SimpleDocTemplate(output, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch,
+                                          leftMargin=0.5*inch, rightMargin=0.5*inch)
+                    
+                    styles = getSampleStyleSheet()
+                    title_style = ParagraphStyle(
+                        'CustomTitle',
+                        parent=styles['Heading1'],
+                        fontSize=16,
+                        spaceAfter=20,
+                        alignment=1,
+                        textColor=colors.HexColor('#5B5FC7')
+                    )
+                    
+                    story = []
+                    
+                    if title:
+                        title_para = Paragraph(str(title), title_style)
+                        story.append(title_para)
+                        story.append(Spacer(1, 12))
+                    
+                    pdf_df = df.copy()
+                    
+                    for col in pdf_df.columns:
+                        if pdf_df[col].dtype in ['float64', 'float32', 'int64', 'int32']:
+                            numeric_vals = pdf_df[col].dropna()
+                            if len(numeric_vals) > 0 and numeric_vals.min() >= 0 and numeric_vals.max() <= 1:
+                                pdf_df[col] = pdf_df[col].apply(lambda x: f"{x*100:.1f}%" if pd.notna(x) else "")
+                    
+                    data = [list(pdf_df.columns)]
+                    for _, row in pdf_df.iterrows():
+                        data.append([str(val) if val is not None else "" for val in row])
+                    
+                    page_width = A4[0] - 2 * 0.5 * inch
+                    num_cols = len(pdf_df.columns)
+                    col_width = page_width / num_cols
+                    
+                    table = Table(data, colWidths=[col_width] * num_cols)
+                    
+                    table.setStyle(TableStyle([
+                        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#5B5FC7')),
+                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                        ('FONTSIZE', (0, 0), (-1, 0), 10),
+                        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                        ('FONTSIZE', (0, 1), (-1, -1), 8),
+                        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F2F2F2')]),
+                    ]))
+                    
+                    story.append(table)
+                    
+                    footer_style = ParagraphStyle(
+                        'Footer',
+                        parent=styles['Normal'],
+                        fontSize=8,
+                        spaceAfter=12,
+                        alignment=1,
+                        textColor=colors.grey
+                    )
+                    
+                    story.append(Spacer(1, 20))
+                    footer_text = f"Nəticələr sayı: {len(pdf_df)} | Yaradılma tarixi: {pd.Timestamp.now().strftime('%d.%m.%Y %H:%M')}"
+                    footer_para = Paragraph(footer_text, footer_style)
+                    story.append(footer_para)
+                    
+                    doc.build(story)
+                    output.seek(0)
+                    return output
+                    
+                except Exception as e:
+                    st.error(f"PDF yaradılarkən xəta: {e}")
+                    return None
+       
+            # Create download buttons (only if duplicates are resolved)
             if allow_download:
                 excel_data = to_excel(final_filtered_df, title_cell)
-                if excel_data:
+                pdf_data = to_pdf(final_filtered_df, title_cell)
+                
+                if excel_data and pdf_data:
+                    original_filename = uploaded_file.name
+                    base_name = original_filename.rsplit('.', 1)[0]
+                    if len(base_name) > 20:
+                        trimmed_name = base_name[:-20]
+                    else:
+                        trimmed_name = base_name
+                    
+                    filter_part = ""
+                    if selected_assignments:
+                        first_filter = str(selected_assignments[0])[:20]
+                        filter_part = f"_{first_filter}"
+                    
+                    excel_filename = f"{trimmed_name}{filter_part}.xlsx"
+                    pdf_filename = f"{trimmed_name}{filter_part}.pdf"
+                    
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        st.download_button(
+                            label="📊 Excel faylını yüklə",
+                            data=excel_data,
+                            file_name=excel_filename,
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        )
+                    
+                    with col2:
+                        st.download_button(
+                            label="📄 PDF faylını yüklə", 
+                            data=pdf_data,
+                            file_name=pdf_filename,
+                            mime="application/pdf"
+                        )
+                elif excel_data:
                     original_filename = uploaded_file.name
                     base_name = original_filename.rsplit('.', 1)[0]
                     if len(base_name) > 20:
@@ -423,5 +530,6 @@ if uploaded_file:
                         file_name=download_filename,
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     )
+                    st.warning("PDF yaradıla bilmədi, yalnız Excel mövcuddur")
             else:
                 st.error("❌ Yükləmək olmaz. Təkrarları aradan qaldırın.")
