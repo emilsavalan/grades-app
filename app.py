@@ -565,6 +565,7 @@ if uploaded_file:
                 except Exception as e:
                     st.error(f"PDF yaradılarkən xəta: {e}")
                     return None
+            # Add this function after your existing to_pdf function
 
             def to_pdf_landscape(df, title):
                 output = BytesIO()
@@ -647,9 +648,46 @@ if uploaded_file:
                     page_width = A4[1] - 2 * 0.5 * inch
                     num_cols = len(pdf_df.columns)
                     
-                    # Simple equal column width distribution for landscape
-                    col_width = page_width / num_cols
-                    col_widths = [col_width] * num_cols
+                    # Smart column width distribution for landscape
+                    col_widths = [0] * num_cols
+                    
+                    # Identify column types based on names and content
+                    short_numeric_cols = []  # Points, Max Points, Percent - these need less width
+                    long_content_cols = []   # Columns with longer text content
+                    regular_cols = []        # Everything else
+                    
+                    for i, col_name in enumerate(pdf_df.columns):
+                        col_name_lower = str(col_name).lower()
+                        if any(keyword in col_name_lower for keyword in ['point', 'percent', 'max']):
+                            short_numeric_cols.append(i)
+                        elif i == 2 or any(keyword in col_name_lower for keyword in ['assignment', 'email']):
+                            # Third column (index 2) or columns with typically longer content
+                            long_content_cols.append(i)
+                        else:
+                            regular_cols.append(i)
+                    
+                    # Allocate widths: short numeric cols get less, long content cols get more
+                    short_col_width = 0.8 * inch  # Narrow columns for numeric data
+                    regular_col_width = 1.2 * inch  # Regular width
+                    
+                    # Calculate remaining width for long content columns
+                    used_width = (len(short_numeric_cols) * short_col_width + 
+                                 len(regular_cols) * regular_col_width)
+                    remaining_width = page_width - used_width
+                    
+                    if len(long_content_cols) > 0:
+                        long_col_width = remaining_width / len(long_content_cols)
+                    else:
+                        long_col_width = regular_col_width
+                    
+                    # Assign widths
+                    for i in range(num_cols):
+                        if i in short_numeric_cols:
+                            col_widths[i] = short_col_width
+                        elif i in long_content_cols:
+                            col_widths[i] = long_col_width
+                        else:
+                            col_widths[i] = regular_col_width
 
                     table = Table(data, colWidths=col_widths)
 
@@ -666,6 +704,11 @@ if uploaded_file:
                         ('GRID', (0, 0), (-1, -1), 1, colors.black),
                         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F2F2F2')]),
                     ]
+
+                    # Apply left alignment and top valignment for long content columns
+                    for col_index in long_content_cols:
+                        table_style.append(('ALIGN', (col_index, 1), (col_index, -1), 'LEFT'))
+                        table_style.append(('VALIGN', (col_index, 1), (col_index, -1), 'TOP'))
 
                     table.setStyle(TableStyle(table_style))
                     story.append(table)
@@ -693,6 +736,8 @@ if uploaded_file:
                     st.error(f"PDF yaradılarkən xəta: {e}")
                     return None
 
+
+            # Replace the existing download button section with this updated version:
 
             # Create download buttons (only if duplicates are resolved)
             if allow_download:
