@@ -392,7 +392,7 @@ if uploaded_file:
                     st.error(f"Error creating Excel file: {e}")
                     return None
             # PDF download function
-                table = Table(data, colWidths=col_widths)
+            table = Table(data, colWidths=col_widths)
             def to_pdf(df, title):
                 output = BytesIO()
                 try:
