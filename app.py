@@ -477,26 +477,30 @@ if uploaded_file:
                     page_width = A4[0] - 2 * 0.5 * inch
                     num_cols = len(pdf_df.columns)
                     
-                    # Calculate dynamic column widths based on content
-                    col_widths = []
+                    # Initialize assignments_col_index
                     assignments_col_index = None
                     
-                    # Find assignments column and calculate widths
+                    # Find assignments column first
                     for i, col in enumerate(pdf_df.columns):
                         if col and "assignment" in str(col).lower():
                             assignments_col_index = i
-                            # Give assignments column 40% of total width
-                            col_widths.append(page_width * 0.4)
-                        else:
-                            # Distribute remaining 60% among other columns
-                            remaining_cols = num_cols - 1 if assignments_col_index is not None else num_cols
-                            col_widths.append((page_width * 0.6) / remaining_cols if assignments_col_index is not None else page_width / num_cols)
+                            break
                     
-                    # If no assignments column found, use equal widths
-                    if assignments_col_index is None:
+                    # Calculate dynamic column widths based on content
+                    col_widths = []
+                    if assignments_col_index is not None:
+                        # If assignments column exists, give it 40% width
+                        remaining_cols = num_cols - 1
+                        other_col_width = (page_width * 0.6) / remaining_cols if remaining_cols > 0 else 0
+                        
+                        for i in range(num_cols):
+                            if i == assignments_col_index:
+                                col_widths.append(page_width * 0.4)
+                            else:
+                                col_widths.append(other_col_width)
+                    else:
+                        # No assignments column, use equal widths
                         col_widths = [page_width / num_cols] * num_cols
-                    
-                    table = Table(data, colWidths=col_widths)
                     
                     # Use Noto Sans for all table content with better text wrapping
                     table_style = [
