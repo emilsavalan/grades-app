@@ -402,8 +402,8 @@ if uploaded_file:
 
                     # Use only Noto Sans fonts
                     try:
-                        pdfmetrics.registerFont(TTFont('NotoSans-Regular', 'fonts/NotoSans-Regular.ttf'))
-                        pdfmetrics.registerFont(TTFont('NotoSans-Bold', 'fonts/NotoSans-Bold.ttf'))
+                        pdfmetrics.registerFont(TTFont('NotoSans-Regular', 'fonts/segoeuithis.ttf'))
+                        pdfmetrics.registerFont(TTFont('NotoSans-Bold', 'fonts/segoeuithibd.ttf'))
                         font_name = 'NotoSans-Regular'
                         font_name_bold = 'NotoSans-Bold'
                     except Exception as e:
