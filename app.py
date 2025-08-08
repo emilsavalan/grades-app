@@ -1,25 +1,14 @@
 import streamlit as st
 import pandas as pd
 from io import BytesIO
+import openpyxl
+from openpyxl.styles import Font, PatternFill
+from openpyxl.utils import get_column_letter
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfbase import pdfmetrics
-import openpyxl
-from openpyxl.styles import Font, PatternFill
-from openpyxl.utils import get_column_letter
-
-try:
-    pdfmetrics.registerFont(TTFont('SegoeUI', 'fonts/segoeuithibd.ttf'))
-    pdfmetrics.registerFont(TTFont('SegoeUI-Bold', 'fonts/segoeuithis.ttf'))
-except Exception as e:
-    st.warning(f"Custom font files 'SegoeUI.ttf' and/or 'SegoeUI-Bold.ttf' not found. "
-               f"Standard fonts will be used as a fallback, which may cause character issues. Error: {e}")
-
-
 
 # Set page config to wide mode
 st.set_page_config(
@@ -407,84 +396,77 @@ if uploaded_file:
                 output = BytesIO()
                 try:
                     doc = SimpleDocTemplate(output, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch,
-                                            leftMargin=0.3*inch, rightMargin=0.3*inch)
-                    story = []
+                                          leftMargin=0.5*inch, rightMargin=0.5*inch)
+                    
                     styles = getSampleStyleSheet()
-
-                    # Check if custom font is registered and use it, otherwise fallback
-                    title_font = 'DejaVuSans-Bold' if 'DejaVuSans-Bold' in pdfmetrics.getRegisteredFontNames() else 'Helvetica-Bold'
-                    body_font = 'DejaVuSans' if 'DejaVuSans' in pdfmetrics.getRegisteredFontNames() else 'Helvetica'
-
                     title_style = ParagraphStyle(
                         'CustomTitle',
                         parent=styles['Heading1'],
                         fontSize=16,
                         spaceAfter=20,
                         alignment=1,
-                        textColor=colors.HexColor('#5B5FC7'),
-                        fontName=title_font
+                        textColor=colors.HexColor('#5B5FC7')
                     )
                     
+                    story = []
+                    
                     if title:
-                        story.append(Paragraph(str(title), title_style))
+                        title_para = Paragraph(str(title), title_style)
+                        story.append(title_para)
                         story.append(Spacer(1, 12))
-
-                    # Prepare data for PDF table
+                    
                     pdf_df = df.copy()
+                    
                     for col in pdf_df.columns:
                         if pdf_df[col].dtype in ['float64', 'float32', 'int64', 'int32']:
                             numeric_vals = pdf_df[col].dropna()
                             if len(numeric_vals) > 0 and numeric_vals.min() >= 0 and numeric_vals.max() <= 1:
                                 pdf_df[col] = pdf_df[col].apply(lambda x: f"{x*100:.1f}%" if pd.notna(x) else "")
-                        # Ensure all values are strings for ReportLab
-                        pdf_df[col] = pdf_df[col].apply(lambda x: "" if pd.isna(x) else str(x))
-
-                    data = [list(pdf_df.columns)] + pdf_df.values.tolist()
                     
-                    # Calculate dynamic column widths
+                    data = [list(pdf_df.columns)]
+                    for _, row in pdf_df.iterrows():
+                        data.append([str(val) if val is not None else "" for val in row])
+                    
+                    page_width = A4[0] - 2 * 0.5 * inch
                     num_cols = len(pdf_df.columns)
-                    available_width = A4[0] - 2 * 0.3 * inch
-                    col_widths = [available_width / num_cols] * num_cols
+                    col_width = page_width / num_cols
                     
-                    table = Table(data, colWidths=col_widths)
+                    table = Table(data, colWidths=[col_width] * num_cols)
                     
                     table.setStyle(TableStyle([
                         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#5B5FC7')),
                         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
                         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                        ('FONTNAME', (0, 0), (-1, 0), title_font),
-                        ('FONTSIZE', (0, 0), (-1, 0), 9),
-                        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
-                        ('TOPPADDING', (0, 0), (-1, 0), 8),
-                        ('FONTNAME', (0, 1), (-1, -1), body_font),
-                        ('FONTSIZE', (0, 1), (-1, -1), 7),
-                        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                        ('FONTSIZE', (0, 0), (-1, 0), 10),
+                        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                        ('FONTSIZE', (0, 1), (-1, -1), 8),
+                        ('GRID', (0, 0), (-1, -1), 1, colors.black),
                         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F2F2F2')]),
-                        ('LEFTPADDING', (0, 0), (-1, -1), 3),
-                        ('RIGHTPADDING', (0, 0), (-1, -1), 3),
-                        ('WORDWRAP', (0, 0), (-1, -1), True),
                     ]))
                     
                     story.append(table)
                     
-                    # Footer
                     footer_style = ParagraphStyle(
                         'Footer',
                         parent=styles['Normal'],
                         fontSize=8,
                         spaceAfter=12,
                         alignment=1,
-                        textColor=colors.grey,
-                        fontName=body_font
+                        textColor=colors.grey
                     )
-                    footer_text = f"Neticeler sayi: {len(pdf_df)} | Yaradilma tarixi: {pd.Timestamp.now().strftime('%d.%m.%Y %H:%M')}"
+                    
                     story.append(Spacer(1, 20))
-                    story.append(Paragraph(footer_text, footer_style))
+                    footer_text = f"Nəticələr sayı: {len(pdf_df)} | Yaradılma tarixi: {pd.Timestamp.now().strftime('%d.%m.%Y %H:%M')}"
+                    footer_para = Paragraph(footer_text, footer_style)
+                    story.append(footer_para)
                     
                     doc.build(story)
                     output.seek(0)
                     return output
+                    
                 except Exception as e:
                     st.error(f"PDF yaradılarkən xəta: {e}")
                     return None
