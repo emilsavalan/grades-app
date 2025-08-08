@@ -753,11 +753,6 @@ if uploaded_file:
 
             # Create download buttons (only if duplicates are resolved)
             if allow_download:
-                excel_data = to_excel(final_filtered_df, title_cell)
-                pdf_data = to_pdf(final_filtered_df, title_cell)
-                pdf_landscape_data = to_pdf_landscape(final_filtered_df, title_cell)
-                
-                # Generate filenames
                 original_filename = uploaded_file.name
                 trimmed_year = original_filename[:5]
 
@@ -776,6 +771,16 @@ if uploaded_file:
                 excel_filename = f"{trimmed_year}{filter_part}.xlsx"
                 pdf_filename = f"{trimmed_year}{filter_part}_dik.pdf"
                 pdf_landscape_filename = f"{trimmed_year}{filter_part}.pdf"
+
+
+                title_cell = title_cell[:-15] + filter_part
+
+                excel_data = to_excel(final_filtered_df, title_cell)
+                pdf_data = to_pdf(final_filtered_df, title_cell)
+                pdf_landscape_data = to_pdf_landscape(final_filtered_df, title_cell)
+                
+                # Generate filenames
+
                 
                 # Create three columns for the buttons
                 col1, col2, col3 = st.columns(3)
