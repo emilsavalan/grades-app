@@ -52,6 +52,20 @@ st.markdown(
         
     }
 
+/* Make multiselect selected tokens wrap and not be ellipsized */
+[data-testid="stMultiSelect"] div[role="listbox"] div {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    max-width: none !important;
+    min-width: 0 !important;
+}
+
+/* Extra: if chips are inline-flex, allow them to expand to full content */
+[data-testid="stMultiSelect"] div[role="listbox"] div > * {
+    white-space: normal !important;
+}
+
     </style>
     """,
     unsafe_allow_html=True,
