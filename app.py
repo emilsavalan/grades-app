@@ -11,6 +11,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+import unicodedata 
 # Set page config to wide mode
 st.set_page_config(
     page_title="Excel Qiymətlər",
@@ -430,6 +431,13 @@ if uploaded_file:
 
                     pdf_df = df.copy()
 
+                    # --- MODIFICATION START: Unicode Normalization ---
+                    for col in pdf_df.columns:
+                        if pd.api.types.is_string_dtype(pdf_df[col]):
+                            # Normalize the string data to NFC form
+                            pdf_df[col] = pdf_df[col].apply(lambda x: unicodedata.normalize('NFC', str(x)))
+                    # --- MODIFICATION END ---
+                    
                     first_col_index = 0
                     long_content_col_indices = []
                     short_content_col_indices = []
@@ -448,7 +456,7 @@ if uploaded_file:
                             numeric_vals = pdf_df[col].dropna()
                             if len(numeric_vals) > 0 and numeric_vals.min() >= 0 and numeric_vals.max() <= 1:
                                 pdf_df[col] = pdf_df[col].apply(lambda x: f"{x*100:.1f}%" if pd.notna(x) else "")
-
+                    
                     first_col_style = ParagraphStyle(
                         'FirstColStyle',
                         fontName=font_name,
@@ -471,10 +479,7 @@ if uploaded_file:
                     for _, row in pdf_df.iterrows():
                         row_data = []
                         for i, val in enumerate(row):
-                            # --- MODIFICATION START ---
-                            # Ensure all text is treated as a UTF-8 string
-                            cell_text = str(val).encode('utf-8').decode('utf-8') if val is not None else ""
-                            # --- MODIFICATION END ---
+                            cell_text = str(val) if val is not None else ""
                             
                             if i == first_col_index:
                                 wrapped_text = Paragraph(cell_text, first_col_style)
