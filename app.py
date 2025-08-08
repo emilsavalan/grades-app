@@ -652,13 +652,17 @@ if uploaded_file:
                     col_widths = [0] * num_cols
                     
                     # Identify column types based on names and content
-                    short_numeric_cols = []  # Points, Max Points, Percent - these need less width
-                    long_content_cols = []   # Columns with longer text content
-                    regular_cols = []        # Everything else
+                    first_col_index = 0         # First column (likely full names) - needs extra width
+                    short_numeric_cols = []     # Points, Max Points, Percent - these need less width
+                    long_content_cols = []      # Columns with longer text content
+                    regular_cols = []           # Everything else
                     
                     for i, col_name in enumerate(pdf_df.columns):
                         col_name_lower = str(col_name).lower()
-                        if any(keyword in col_name_lower for keyword in ['point', 'percent', 'max']):
+                        if i == first_col_index:
+                            # First column handled separately
+                            continue
+                        elif any(keyword in col_name_lower for keyword in ['point', 'percent', 'max']):
                             short_numeric_cols.append(i)
                         elif i == 2 or any(keyword in col_name_lower for keyword in ['assignment', 'email']):
                             # Third column (index 2) or columns with typically longer content
@@ -666,12 +670,14 @@ if uploaded_file:
                         else:
                             regular_cols.append(i)
                     
-                    # Allocate widths: short numeric cols get less, long content cols get more
-                    short_col_width = 0.8 * inch  # Narrow columns for numeric data
-                    regular_col_width = 1.2 * inch  # Regular width
+                    # Allocate widths: first column gets extra width, short numeric cols get less, long content cols get more
+                    first_col_width = 1.8 * inch      # Extra width for full names
+                    short_col_width = 0.8 * inch      # Narrow columns for numeric data
+                    regular_col_width = 1.2 * inch    # Regular width
                     
                     # Calculate remaining width for long content columns
-                    used_width = (len(short_numeric_cols) * short_col_width + 
+                    used_width = (first_col_width + 
+                                 len(short_numeric_cols) * short_col_width + 
                                  len(regular_cols) * regular_col_width)
                     remaining_width = page_width - used_width
                     
@@ -682,7 +688,9 @@ if uploaded_file:
                     
                     # Assign widths
                     for i in range(num_cols):
-                        if i in short_numeric_cols:
+                        if i == first_col_index:
+                            col_widths[i] = first_col_width
+                        elif i in short_numeric_cols:
                             col_widths[i] = short_col_width
                         elif i in long_content_cols:
                             col_widths[i] = long_col_width
@@ -705,10 +713,14 @@ if uploaded_file:
                         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F2F2F2')]),
                     ]
 
-                    # Apply left alignment and top valignment for long content columns
+                    # Apply left alignment and top valignment for long content columns and first column
                     for col_index in long_content_cols:
                         table_style.append(('ALIGN', (col_index, 1), (col_index, -1), 'LEFT'))
                         table_style.append(('VALIGN', (col_index, 1), (col_index, -1), 'TOP'))
+                    
+                    # First column (names) should also be left-aligned and top-aligned
+                    table_style.append(('ALIGN', (first_col_index, 1), (first_col_index, -1), 'LEFT'))
+                    table_style.append(('VALIGN', (first_col_index, 1), (first_col_index, -1), 'TOP'))
 
                     table.setStyle(TableStyle(table_style))
                     story.append(table)
