@@ -6,7 +6,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
 # Register custom font
-pdfmetrics.registerFont(TTFont('MyTTF', 'fonts/NotoSans-Regular.ttf'))
+pdfmetrics.registerFont(TTFont('MyTTF', 'fonts/segoeuithis.ttf'))
 
 # Create PDF in memory
 pdf_buffer = BytesIO()
