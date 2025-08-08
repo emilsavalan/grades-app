@@ -393,7 +393,6 @@ if uploaded_file:
                     st.error(f"Error creating Excel file: {e}")
                     return None
             # PDF download function
-
             def to_pdf(df, title):
                 output = BytesIO()
                 try:
@@ -431,11 +430,13 @@ if uploaded_file:
 
                     pdf_df = df.copy()
 
-                    # --- MODIFICATION START: Unicode Normalization ---
+                    # --- MODIFICATION START: Direct character removal ---
+                    # This is the most reliable way to fix the double-dot 'i' problem.
+                    # It removes the combining dot character U+0307 from all string columns.
+                    problematic_char = '\u0307' # Unicode for COMBINING DOT ABOVE
                     for col in pdf_df.columns:
                         if pd.api.types.is_string_dtype(pdf_df[col]):
-                            # Normalize the string data to NFC form
-                            pdf_df[col] = pdf_df[col].apply(lambda x: unicodedata.normalize('NFC', str(x)))
+                            pdf_df[col] = pdf_df[col].astype(str).str.replace(problematic_char, '', regex=False)
                     # --- MODIFICATION END ---
                     
                     first_col_index = 0
