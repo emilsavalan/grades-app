@@ -528,7 +528,7 @@ if uploaded_file:
                         ('VALIGN', (first_col_index, 1), (first_col_index, -1), 'TOP'),
                         ('GRID', (0, 0), (-1, -1), 1, colors.black),
                         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-                        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F2F2F2')]),
+                        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#E7E7F7')]),
                     ]
 
                     for col_index in long_content_col_indices:
