@@ -392,6 +392,7 @@ if uploaded_file:
                     st.error(f"Error creating Excel file: {e}")
                     return None
             # PDF download function
+
             def to_pdf(df, title):
                 output = BytesIO()
                 try:
@@ -429,14 +430,14 @@ if uploaded_file:
 
                     pdf_df = df.copy()
 
+                    first_col_index = 0
                     long_content_col_indices = []
                     short_content_col_indices = []
-                    first_col_index = 0  # Assuming the first column is always the names
                     
                     for i, col in enumerate(pdf_df.columns):
                         col_name_lower = str(col).lower()
                         if i == first_col_index:
-                            pass # The first column will be handled separately
+                            pass # First column handled separately
                         elif "assignment" in col_name_lower or "email" in col_name_lower:
                             long_content_col_indices.append(i)
                         else:
@@ -447,7 +448,26 @@ if uploaded_file:
                             numeric_vals = pdf_df[col].dropna()
                             if len(numeric_vals) > 0 and numeric_vals.min() >= 0 and numeric_vals.max() <= 1:
                                 pdf_df[col] = pdf_df[col].apply(lambda x: f"{x*100:.1f}%" if pd.notna(x) else "")
-
+                    
+                    # --- MODIFICATION START ---
+                    # Define a ParagraphStyle specifically for the first column
+                    first_col_style = ParagraphStyle(
+                        'FirstColStyle',
+                        fontName=font_name,
+                        fontSize=9,  # Slightly larger font size for readability
+                        alignment=0,  # Left alignment
+                        leading=11
+                    )
+                    # Define a ParagraphStyle for other long-content columns with smaller font
+                    long_col_style = ParagraphStyle(
+                        'LongColStyle',
+                        fontName=font_name,
+                        fontSize=8,
+                        alignment=0,
+                        leading=10
+                    )
+                    # --- MODIFICATION END ---
+                    
                     data = []
                     headers = [str(col) if col is not None else "" for col in pdf_df.columns]
                     data.append(headers)
@@ -457,15 +477,12 @@ if uploaded_file:
                         for i, val in enumerate(row):
                             cell_text = str(val) if val is not None else ""
                             
-                            # Apply text wrapping and smaller font size to long content columns AND the first column
-                            if i == first_col_index or (i in long_content_col_indices and len(cell_text) > 20):
-                                wrapped_text = Paragraph(cell_text, ParagraphStyle(
-                                    'CellStyle',
-                                    fontName=font_name,
-                                    fontSize=8,
-                                    alignment=0,
-                                    leading=10
-                                ))
+                            # Use specific ParagraphStyle for the first column and other long columns
+                            if i == first_col_index:
+                                wrapped_text = Paragraph(cell_text, first_col_style)
+                                row_data.append(wrapped_text)
+                            elif i in long_content_col_indices and len(cell_text) > 20:
+                                wrapped_text = Paragraph(cell_text, long_col_style)
                                 row_data.append(wrapped_text)
                             else:
                                 row_data.append(cell_text)
@@ -474,19 +491,15 @@ if uploaded_file:
                     page_width = A4[0] - 2 * 0.5 * inch
                     num_cols = len(pdf_df.columns)
                     
-                    # --- REVISED LOGIC START: Assign fixed width to first and long columns, then distribute the rest to short columns ---
                     col_widths = [0] * num_cols
                     
-                    # 1. Assign a fixed width to the first column (for names)
-                    first_col_width = 1.5 * inch # A more generous width for names
+                    first_col_width = 1.5 * inch
                     col_widths[first_col_index] = first_col_width
                     
-                    # 2. Assign a fixed width to the long content columns
-                    long_col_width = 1.2 * inch # A fixed width for email/assignment
+                    long_col_width = 1.2 * inch
                     for i in long_content_col_indices:
                         col_widths[i] = long_col_width
                         
-                    # 3. Calculate remaining width for the "other" (short) columns
                     total_assigned_width = first_col_width + (len(long_content_col_indices) * long_col_width)
                     remaining_width = page_width - total_assigned_width
                     
@@ -495,7 +508,6 @@ if uploaded_file:
                         short_col_width = remaining_width / num_short_cols
                         for i in short_content_col_indices:
                             col_widths[i] = short_col_width
-                    # --- REVISED LOGIC END ---
 
                     table = Table(data, colWidths=col_widths)
 
@@ -507,15 +519,15 @@ if uploaded_file:
                         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                         ('FONTSIZE', (0, 0), (-1, 0), 10),
                         ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                        ('FONTSIZE', (0, 1), (-1, -1), 9),
+                        # --- MODIFICATION START ---
+                        ('FONTSIZE', (0, 1), (-1, -1), 9), # Default body font size
+                        ('ALIGN', (first_col_index, 1), (first_col_index, -1), 'LEFT'),
+                        ('VALIGN', (first_col_index, 1), (first_col_index, -1), 'TOP'),
+                        # --- MODIFICATION END ---
                         ('GRID', (0, 0), (-1, -1), 1, colors.black),
                         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F2F2F2')]),
                     ]
-
-                    # Apply specific alignment and wrapping to the first and long content columns
-                    table_style.append(('ALIGN', (first_col_index, 1), (first_col_index, -1), 'LEFT'))
-                    table_style.append(('VALIGN', (first_col_index, 1), (first_col_index, -1), 'TOP'))
 
                     for col_index in long_content_col_indices:
                         table_style.append(('ALIGN', (col_index, 1), (col_index, -1), 'LEFT'))
