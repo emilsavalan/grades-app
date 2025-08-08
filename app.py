@@ -567,6 +567,7 @@ if uploaded_file:
                     return None
             # Add this function after your existing to_pdf function
 
+
             def to_pdf_landscape(df, title):
                 output = BytesIO()
                 try:
@@ -765,17 +766,35 @@ if uploaded_file:
                 else:
                     trimmed_name = base_name
                 
-                # Create assignment string from selected assignments
-                if selected_assignments:
-                    # Join selected assignments with underscore, limit length for filename
-                    assignment_string = "_".join(str(assignment) for assignment in selected_assignments)
-                    # Limit total assignment string length to avoid very long filenames
+                # Create assignment string from intersection of selected assignments
+                if selected_assignments and len(selected_assignments) > 0:
+                    if len(selected_assignments) == 1:
+                        # If only one assignment, use it as is
+                        assignment_string = str(selected_assignments[0])
+                    else:
+                        # Find the longest common prefix (intersection) of all selected assignments
+                        assignment_strings = [str(assignment) for assignment in selected_assignments]
+                        common_prefix = assignment_strings[0]
+                        
+                        for assignment in assignment_strings[1:]:
+                            # Find common prefix between current common_prefix and next assignment
+                            new_prefix = ""
+                            for i in range(min(len(common_prefix), len(assignment))):
+                                if common_prefix[i] == assignment[i]:
+                                    new_prefix += common_prefix[i]
+                                else:
+                                    break
+                            common_prefix = new_prefix
+                        
+                        assignment_string = common_prefix.rstrip()  # Remove trailing spaces
+                    
+                    # Limit length and clean for filename
                     if len(assignment_string) > 50:
                         assignment_string = assignment_string[:50]
                     # Clean the assignment string for filename (remove problematic characters)
                     assignment_string = "".join(c for c in assignment_string if c.isalnum() or c in "._- ")
-                    assignment_string = assignment_string.replace(" ", "_")
-                    filter_part = f"_{assignment_string}"
+                    assignment_string = assignment_string.replace(" ", "_").rstrip("_")
+                    filter_part = f"_{assignment_string}" if assignment_string else ""
                 else:
                     filter_part = ""
                 
