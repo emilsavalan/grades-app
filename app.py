@@ -1,14 +1,23 @@
 import streamlit as st
 import pandas as pd
 from io import BytesIO
-import openpyxl
-from openpyxl.styles import Font, PatternFill
-from openpyxl.utils import get_column_letter
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase import pdfmetrics
+
+
+try:
+    pdfmetrics.registerFont(TTFont('SegoeUI', 'fonts/segoeuithibd.ttf'))
+    pdfmetrics.registerFont(TTFont('SegoeUI-Bold', 'fonts/segoeuithis.ttf'))
+except Exception as e:
+    st.warning(f"Custom font files 'SegoeUI.ttf' and/or 'SegoeUI-Bold.ttf' not found. "
+               f"Standard fonts will be used as a fallback, which may cause character issues. Error: {e}")
+
+
 
 # Set page config to wide mode
 st.set_page_config(
@@ -393,178 +402,91 @@ if uploaded_file:
             
             # PDF download function
             def to_pdf(df, title):
-                from reportlab.pdfbase.ttfonts import TTFont
-                from reportlab.pdfbase import pdfmetrics
-                from reportlab.lib.fonts import addMapping
-                import unicodedata
+            """Creates a PDF file in memory from a DataFrame using a Unicode font."""
+            output = BytesIO()
+            try:
+                doc = SimpleDocTemplate(output, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch,
+                                        leftMargin=0.3*inch, rightMargin=0.3*inch)
+                story = []
+                styles = getSampleStyleSheet()
+
+                # Check if custom font is registered and use it, otherwise fallback
+                title_font = 'DejaVuSans-Bold' if 'DejaVuSans-Bold' in pdfmetrics.getRegisteredFontNames() else 'Helvetica-Bold'
+                body_font = 'DejaVuSans' if 'DejaVuSans' in pdfmetrics.getRegisteredFontNames() else 'Helvetica'
+
+                title_style = ParagraphStyle(
+                    'CustomTitle',
+                    parent=styles['Heading1'],
+                    fontSize=16,
+                    spaceAfter=20,
+                    alignment=1,
+                    textColor=colors.HexColor('#5B5FC7'),
+                    fontName=title_font
+                )
                 
-                output = BytesIO()
-                try:
-                    # Function to fix Turkish/Azerbaijani character display issues
-                    def fix_turkish_chars(text):
-                        if text is None:
-                            return ""
-                        
-                        text_str = str(text)
-                        
-                        # Character mappings to avoid font rendering issues
-                        char_fixes = {
-                            # Turkish/Azerbaijani specific fixes
-                            'İ': 'I',   # Capital I with dot -> regular I (for PDF display)
-                            'ı': 'i',   # Dotless i -> regular i (for PDF display)
-                            'Ğ': 'G',   # Soft G -> regular G
-                            'ğ': 'g',   # Soft g -> regular g
-                            'Ş': 'S',   # S with cedilla -> regular S
-                            'ş': 's',   # s with cedilla -> regular s
-                            'Ç': 'C',   # C with cedilla -> regular C
-                            'ç': 'c',   # c with cedilla -> regular c
-                            'Ü': 'U',   # U with diaeresis -> regular U
-                            'ü': 'u',   # u with diaeresis -> regular u
-                            'Ö': 'O',   # O with diaeresis -> regular O
-                            'ö': 'o',   # o with diaeresis -> regular o
-                            'Ə': 'E',   # Azerbaijani schwa -> E
-                            'ə': 'e',   # Azerbaijani small schwa -> e
-                        }
-                        
-                        # Apply fixes
-                        for original, replacement in char_fixes.items():
-                            text_str = text_str.replace(original, replacement)
-                        
-                        return text_str
-                    
-                    # Alternative approach: Keep original characters but use better font handling
-                    def keep_original_chars(text):
-                        if text is None:
-                            return ""
-                        return str(text).encode('latin-1', errors='replace').decode('latin-1')
-                    
-                    # Use the character replacement approach for better PDF compatibility
-                    process_text = fix_turkish_chars
-                    
-                    doc = SimpleDocTemplate(output, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch,
-                                          leftMargin=0.3*inch, rightMargin=0.3*inch)
-                    
-                    styles = getSampleStyleSheet()
-                    title_style = ParagraphStyle(
-                        'CustomTitle',
-                        parent=styles['Heading1'],
-                        fontSize=16,
-                        spaceAfter=20,
-                        alignment=1,
-                        textColor=colors.HexColor('#5B5FC7'),
-                        fontName='Helvetica-Bold'  # Use standard font
-                    )
-                    
-                    story = []
-                    
-                    if title:
-                        title_text = process_text(title)
-                        title_para = Paragraph(title_text, title_style)
-                        story.append(title_para)
-                        story.append(Spacer(1, 12))
-                    
-                    pdf_df = df.copy()
-                    
-                    # Format percentage columns
-                    for col in pdf_df.columns:
-                        if pdf_df[col].dtype in ['float64', 'float32', 'int64', 'int32']:
-                            numeric_vals = pdf_df[col].dropna()
-                            if len(numeric_vals) > 0 and numeric_vals.min() >= 0 and numeric_vals.max() <= 1:
-                                pdf_df[col] = pdf_df[col].apply(lambda x: f"{x*100:.1f}%" if pd.notna(x) else "")
-                    
-                    # Prepare data with text processing
-                    data = []
-                    
-                    # Add headers
-                    headers = []
-                    for col in pdf_df.columns:
-                        header_text = process_text(col)
-                        headers.append(header_text)
-                    data.append(headers)
-                    
-                    # Add data rows
-                    for _, row in pdf_df.iterrows():
-                        row_data = []
-                        for val in row:
-                            cell_text = process_text(val)
-                            row_data.append(cell_text)
-                        data.append(row_data)
-                    
-                    # Calculate dynamic column widths based on content
-                    available_width = A4[0] - 2 * 0.3 * inch
-                    num_cols = len(pdf_df.columns)
-                    
-                    # Calculate max content length for each column
-                    col_widths = []
-                    for col_idx in range(num_cols):
-                        max_length = 0
-                        for row_data in data:
-                            if col_idx < len(row_data):
-                                content_length = len(str(row_data[col_idx]))
-                                max_length = max(max_length, content_length)
-                        
-                        # Set minimum and maximum widths
-                        min_width = available_width * 0.08  # Minimum 8% of page width
-                        max_width = available_width * 0.35  # Maximum 35% of page width
-                        
-                        # Calculate proportional width based on content
-                        calculated_width = max_length * 6  # 6 points per character approximately
-                        calculated_width = max(min_width, min(calculated_width, max_width))
-                        col_widths.append(calculated_width)
-                    
-                    # Normalize widths to fit available space
-                    total_width = sum(col_widths)
-                    if total_width > available_width:
-                        scale_factor = available_width / total_width
-                        col_widths = [width * scale_factor for width in col_widths]
-                    
-                    table = Table(data, colWidths=col_widths)
-                    
-                    # Apply table style with proper fonts
-                    table.setStyle(TableStyle([
-                        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#5B5FC7')),
-                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                        ('FONTSIZE', (0, 0), (-1, 0), 9),
-                        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
-                        ('TOPPADDING', (0, 0), (-1, 0), 8),
-                        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-                        ('FONTSIZE', (0, 1), (-1, -1), 7),
-                        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-                        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-                        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F2F2F2')]),
-                        ('LEFTPADDING', (0, 0), (-1, -1), 3),
-                        ('RIGHTPADDING', (0, 0), (-1, -1), 3),
-                        ('WORDWRAP', (0, 0), (-1, -1), True),
-                    ]))
-                    
-                    story.append(table)
-                    
-                    # Footer with proper encoding
-                    footer_style = ParagraphStyle(
-                        'Footer',
-                        parent=styles['Normal'],
-                        fontSize=8,
-                        spaceAfter=12,
-                        alignment=1,
-                        textColor=colors.grey,
-                        fontName='Helvetica'
-                    )
-                    
-                    story.append(Spacer(1, 20))
-                    footer_text = f"Neticeler sayi: {len(pdf_df)} | Yaradilma tarixi: {pd.Timestamp.now().strftime('%d.%m.%Y %H:%M')}"
-                    footer_text = process_text(footer_text)
-                    footer_para = Paragraph(footer_text, footer_style)
-                    story.append(footer_para)
-                    
-                    doc.build(story)
-                    output.seek(0)
-                    return output
-                    
-                except Exception as e:
-                    st.error(f"PDF yaradılarkən xəta: {e}")
-                    return None
+                if title:
+                    story.append(Paragraph(str(title), title_style))
+                    story.append(Spacer(1, 12))
+
+                # Prepare data for PDF table
+                pdf_df = df.copy()
+                for col in pdf_df.columns:
+                    if pdf_df[col].dtype in ['float64', 'float32', 'int64', 'int32']:
+                        numeric_vals = pdf_df[col].dropna()
+                        if len(numeric_vals) > 0 and numeric_vals.min() >= 0 and numeric_vals.max() <= 1:
+                            pdf_df[col] = pdf_df[col].apply(lambda x: f"{x*100:.1f}%" if pd.notna(x) else "")
+                    # Ensure all values are strings for ReportLab
+                    pdf_df[col] = pdf_df[col].apply(lambda x: "" if pd.isna(x) else str(x))
+
+                data = [list(pdf_df.columns)] + pdf_df.values.tolist()
+                
+                # Calculate dynamic column widths
+                num_cols = len(pdf_df.columns)
+                available_width = A4[0] - 2 * 0.3 * inch
+                col_widths = [available_width / num_cols] * num_cols
+                
+                table = Table(data, colWidths=col_widths)
+                
+                table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#5B5FC7')),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                    ('FONTNAME', (0, 0), (-1, 0), title_font),
+                    ('FONTSIZE', (0, 0), (-1, 0), 9),
+                    ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+                    ('TOPPADDING', (0, 0), (-1, 0), 8),
+                    ('FONTNAME', (0, 1), (-1, -1), body_font),
+                    ('FONTSIZE', (0, 1), (-1, -1), 7),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F2F2F2')]),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 3),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 3),
+                    ('WORDWRAP', (0, 0), (-1, -1), True),
+                ]))
+                
+                story.append(table)
+                
+                # Footer
+                footer_style = ParagraphStyle(
+                    'Footer',
+                    parent=styles['Normal'],
+                    fontSize=8,
+                    spaceAfter=12,
+                    alignment=1,
+                    textColor=colors.grey,
+                    fontName=body_font
+                )
+                footer_text = f"Neticeler sayi: {len(pdf_df)} | Yaradilma tarixi: {pd.Timestamp.now().strftime('%d.%m.%Y %H:%M')}"
+                story.append(Spacer(1, 20))
+                story.append(Paragraph(footer_text, footer_style))
+                
+                doc.build(story)
+                output.seek(0)
+                return output
+            except Exception as e:
+                st.error(f"PDF yaradılarkən xəta: {e}")
+                return None
        
             # Create download buttons (only if duplicates are resolved)
             if allow_download:
