@@ -710,7 +710,7 @@ if uploaded_file:
                         ('FONTSIZE', (0, 1), (-1, -1), 10),
                         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                         ('GRID', (0, 0), (-1, -1), 1, colors.black),
-                        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F2F2F2')]),
+                        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#E7E7F7')]),
                     ]
 
                     # Apply left alignment and top valignment for long content columns and first column
