@@ -437,7 +437,7 @@ if uploaded_file:
                     for i, col in enumerate(pdf_df.columns):
                         col_name_lower = str(col).lower()
                         if i == first_col_index:
-                            pass # First column handled separately
+                            pass
                         elif "assignment" in col_name_lower or "email" in col_name_lower:
                             long_content_col_indices.append(i)
                         else:
@@ -448,17 +448,14 @@ if uploaded_file:
                             numeric_vals = pdf_df[col].dropna()
                             if len(numeric_vals) > 0 and numeric_vals.min() >= 0 and numeric_vals.max() <= 1:
                                 pdf_df[col] = pdf_df[col].apply(lambda x: f"{x*100:.1f}%" if pd.notna(x) else "")
-                    
-                    # --- MODIFICATION START ---
-                    # Define a ParagraphStyle specifically for the first column
+
                     first_col_style = ParagraphStyle(
                         'FirstColStyle',
                         fontName=font_name,
-                        fontSize=9,  # Slightly larger font size for readability
-                        alignment=0,  # Left alignment
+                        fontSize=9,
+                        alignment=0,
                         leading=11
                     )
-                    # Define a ParagraphStyle for other long-content columns with smaller font
                     long_col_style = ParagraphStyle(
                         'LongColStyle',
                         fontName=font_name,
@@ -466,7 +463,6 @@ if uploaded_file:
                         alignment=0,
                         leading=10
                     )
-                    # --- MODIFICATION END ---
                     
                     data = []
                     headers = [str(col) if col is not None else "" for col in pdf_df.columns]
@@ -475,9 +471,11 @@ if uploaded_file:
                     for _, row in pdf_df.iterrows():
                         row_data = []
                         for i, val in enumerate(row):
-                            cell_text = str(val) if val is not None else ""
+                            # --- MODIFICATION START ---
+                            # Ensure all text is treated as a UTF-8 string
+                            cell_text = str(val).encode('utf-8').decode('utf-8') if val is not None else ""
+                            # --- MODIFICATION END ---
                             
-                            # Use specific ParagraphStyle for the first column and other long columns
                             if i == first_col_index:
                                 wrapped_text = Paragraph(cell_text, first_col_style)
                                 row_data.append(wrapped_text)
@@ -519,11 +517,9 @@ if uploaded_file:
                         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                         ('FONTSIZE', (0, 0), (-1, 0), 10),
                         ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                        # --- MODIFICATION START ---
-                        ('FONTSIZE', (0, 1), (-1, -1), 9), # Default body font size
+                        ('FONTSIZE', (0, 1), (-1, -1), 9),
                         ('ALIGN', (first_col_index, 1), (first_col_index, -1), 'LEFT'),
                         ('VALIGN', (first_col_index, 1), (first_col_index, -1), 'TOP'),
-                        # --- MODIFICATION END ---
                         ('GRID', (0, 0), (-1, -1), 1, colors.black),
                         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F2F2F2')]),
