@@ -331,7 +331,7 @@ if uploaded_file:
                         content_font = Font(name='Segoe UI')
                         header_fill = PatternFill(start_color='5B5FC7', end_color='5B5FC7', fill_type='solid')
 
-                        light_gray_fill = PatternFill(start_color='F2F2F2', end_color='F2F2F2', fill_type='solid')
+                        light_gray_fill = PatternFill(start_color='E7E7F7', end_color='E7E7F7', fill_type='solid')
                         white_fill = PatternFill(start_color='FFFFFF', end_color='FFFFFF', fill_type='solid')
 
                         for row in worksheet.iter_rows():
@@ -761,14 +761,23 @@ if uploaded_file:
                 original_filename = uploaded_file.name
                 base_name = original_filename.rsplit('.', 1)[0]
                 if len(base_name) > 20:
-                    trimmed_name = base_name[:-20]
+                    trimmed_name = base_name[:20]  # Take first 20 characters instead of removing last 20
                 else:
                     trimmed_name = base_name
                 
-                filter_part = ""
+                # Create assignment string from selected assignments
                 if selected_assignments:
-                    first_filter = str(selected_assignments[0])[:20]
-                    filter_part = f"_{first_filter}"
+                    # Join selected assignments with underscore, limit length for filename
+                    assignment_string = "_".join(str(assignment) for assignment in selected_assignments)
+                    # Limit total assignment string length to avoid very long filenames
+                    if len(assignment_string) > 50:
+                        assignment_string = assignment_string[:50]
+                    # Clean the assignment string for filename (remove problematic characters)
+                    assignment_string = "".join(c for c in assignment_string if c.isalnum() or c in "._- ")
+                    assignment_string = assignment_string.replace(" ", "_")
+                    filter_part = f"_{assignment_string}"
+                else:
+                    filter_part = ""
                 
                 excel_filename = f"{trimmed_name}{filter_part}.xlsx"
                 pdf_filename = f"{trimmed_name}{filter_part}.pdf"
