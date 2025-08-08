@@ -392,15 +392,14 @@ if uploaded_file:
                     st.error(f"Error creating Excel file: {e}")
                     return None
             # PDF download function
-                    table = Table(data, colWidths=col_widths)
             def to_pdf(df, title):
                 output = BytesIO()
                 try:
                     doc = SimpleDocTemplate(output, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch,
                                           leftMargin=0.5*inch, rightMargin=0.5*inch)
-                    
+
                     styles = getSampleStyleSheet()
-                    
+
                     # Use only Noto Sans fonts
                     try:
                         # Make sure both font paths are correct
@@ -413,7 +412,7 @@ if uploaded_file:
                         st.error(f"Noto Sans fonts could not be loaded: {e}")
                         st.error("Make sure fonts/NotoSans-Regular.ttf and fonts/NotoSans-Bold.ttf exist")
                         return None
-                    
+
                     title_style = ParagraphStyle(
                         'CustomTitle',
                         fontName=font_name_bold,
@@ -423,41 +422,41 @@ if uploaded_file:
                         alignment=1,
                         textColor=colors.HexColor('#5B5FC7')
                     )
-                    
+
                     story = []
-                    
+
                     if title:
                         title_text = str(title) if title else ""
                         title_para = Paragraph(title_text, title_style)
                         story.append(title_para)
                         story.append(Spacer(1, 12))
-                    
+
                     pdf_df = df.copy()
-                    
+
                     # Find assignments column index first (before any other processing)
                     assignments_col_index = None
                     for i, col in enumerate(pdf_df.columns):
                         if col and "assignment" in str(col).lower():
                             assignments_col_index = i
                             break
-                    
+
                     # Handle percentage formatting
                     for col in pdf_df.columns:
                         if pdf_df[col].dtype in ['float64', 'float32', 'int64', 'int32']:
                             numeric_vals = pdf_df[col].dropna()
                             if len(numeric_vals) > 0 and numeric_vals.min() >= 0 and numeric_vals.max() <= 1:
                                 pdf_df[col] = pdf_df[col].apply(lambda x: f"{x*100:.1f}%" if pd.notna(x) else "")
-                    
+
                     # Prepare table data with text wrapping for long content
                     data = []
-                    
+
                     # Headers
                     headers = []
                     for col in pdf_df.columns:
                         header_text = str(col) if col is not None else ""
                         headers.append(header_text)
                     data.append(headers)
-                    
+
                     # Data rows with text wrapping for assignments column
                     for _, row in pdf_df.iterrows():
                         row_data = []
@@ -480,17 +479,17 @@ if uploaded_file:
                             else:
                                 row_data.append("")
                         data.append(row_data)
-                    
+
                     page_width = A4[0] - 2 * 0.5 * inch
                     num_cols = len(pdf_df.columns)
-                    
+
                     # Calculate dynamic column widths based on assignments column (already found above)
                     col_widths = []
                     if assignments_col_index is not None:
                         # If assignments column exists, give it 40% width
                         remaining_cols = num_cols - 1
                         other_col_width = (page_width * 0.6) / remaining_cols if remaining_cols > 0 else 0
-                        
+
                         for i in range(num_cols):
                             if i == assignments_col_index:
                                 col_widths.append(page_width * 0.4)
@@ -499,7 +498,10 @@ if uploaded_file:
                     else:
                         # No assignments column, use equal widths
                         col_widths = [page_width / num_cols] * num_cols
-                    
+
+                    # Create the Table object here before setting its style
+                    table = Table(data, colWidths=col_widths)
+
                     # Use Noto Sans for all table content with better text wrapping
                     table_style = [
                         ('FONTNAME', (0, 0), (-1, 0), font_name_bold),  # header row
@@ -514,16 +516,16 @@ if uploaded_file:
                         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F2F2F2')]),
                     ]
-                    
+
                     # Special alignment for assignments column
                     if assignments_col_index is not None:
                         table_style.append(('ALIGN', (assignments_col_index, 1), (assignments_col_index, -1), 'LEFT'))
                         table_style.append(('VALIGN', (assignments_col_index, 1), (assignments_col_index, -1), 'TOP'))
-                    
+
                     table.setStyle(TableStyle(table_style))
-                    
+
                     story.append(table)
-                    
+
                     footer_style = ParagraphStyle(
                         'Footer',
                         fontName=font_name,
@@ -533,16 +535,16 @@ if uploaded_file:
                         alignment=1,
                         textColor=colors.grey
                     )
-                    
+
                     story.append(Spacer(1, 20))
                     footer_text = f"Nəticələr sayı: {len(pdf_df)} | Yaradılma tarixi: {pd.Timestamp.now().strftime('%d.%m.%Y %H:%M')}"
                     footer_para = Paragraph(footer_text, footer_style)
                     story.append(footer_para)
-                    
+
                     doc.build(story)
                     output.seek(0)
                     return output
-                    
+
                 except Exception as e:
                     st.error(f"PDF yaradılarkən xəta: {e}")
                     return None
