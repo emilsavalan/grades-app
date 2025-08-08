@@ -402,91 +402,90 @@ if uploaded_file:
             
             # PDF download function
             def to_pdf(df, title):
-            """Creates a PDF file in memory from a DataFrame using a Unicode font."""
-            output = BytesIO()
-            try:
-                doc = SimpleDocTemplate(output, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch,
-                                        leftMargin=0.3*inch, rightMargin=0.3*inch)
-                story = []
-                styles = getSampleStyleSheet()
+                output = BytesIO()
+                try:
+                    doc = SimpleDocTemplate(output, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch,
+                                            leftMargin=0.3*inch, rightMargin=0.3*inch)
+                    story = []
+                    styles = getSampleStyleSheet()
 
-                # Check if custom font is registered and use it, otherwise fallback
-                title_font = 'DejaVuSans-Bold' if 'DejaVuSans-Bold' in pdfmetrics.getRegisteredFontNames() else 'Helvetica-Bold'
-                body_font = 'DejaVuSans' if 'DejaVuSans' in pdfmetrics.getRegisteredFontNames() else 'Helvetica'
+                    # Check if custom font is registered and use it, otherwise fallback
+                    title_font = 'DejaVuSans-Bold' if 'DejaVuSans-Bold' in pdfmetrics.getRegisteredFontNames() else 'Helvetica-Bold'
+                    body_font = 'DejaVuSans' if 'DejaVuSans' in pdfmetrics.getRegisteredFontNames() else 'Helvetica'
 
-                title_style = ParagraphStyle(
-                    'CustomTitle',
-                    parent=styles['Heading1'],
-                    fontSize=16,
-                    spaceAfter=20,
-                    alignment=1,
-                    textColor=colors.HexColor('#5B5FC7'),
-                    fontName=title_font
-                )
-                
-                if title:
-                    story.append(Paragraph(str(title), title_style))
-                    story.append(Spacer(1, 12))
+                    title_style = ParagraphStyle(
+                        'CustomTitle',
+                        parent=styles['Heading1'],
+                        fontSize=16,
+                        spaceAfter=20,
+                        alignment=1,
+                        textColor=colors.HexColor('#5B5FC7'),
+                        fontName=title_font
+                    )
+                    
+                    if title:
+                        story.append(Paragraph(str(title), title_style))
+                        story.append(Spacer(1, 12))
 
-                # Prepare data for PDF table
-                pdf_df = df.copy()
-                for col in pdf_df.columns:
-                    if pdf_df[col].dtype in ['float64', 'float32', 'int64', 'int32']:
-                        numeric_vals = pdf_df[col].dropna()
-                        if len(numeric_vals) > 0 and numeric_vals.min() >= 0 and numeric_vals.max() <= 1:
-                            pdf_df[col] = pdf_df[col].apply(lambda x: f"{x*100:.1f}%" if pd.notna(x) else "")
-                    # Ensure all values are strings for ReportLab
-                    pdf_df[col] = pdf_df[col].apply(lambda x: "" if pd.isna(x) else str(x))
+                    # Prepare data for PDF table
+                    pdf_df = df.copy()
+                    for col in pdf_df.columns:
+                        if pdf_df[col].dtype in ['float64', 'float32', 'int64', 'int32']:
+                            numeric_vals = pdf_df[col].dropna()
+                            if len(numeric_vals) > 0 and numeric_vals.min() >= 0 and numeric_vals.max() <= 1:
+                                pdf_df[col] = pdf_df[col].apply(lambda x: f"{x*100:.1f}%" if pd.notna(x) else "")
+                        # Ensure all values are strings for ReportLab
+                        pdf_df[col] = pdf_df[col].apply(lambda x: "" if pd.isna(x) else str(x))
 
-                data = [list(pdf_df.columns)] + pdf_df.values.tolist()
-                
-                # Calculate dynamic column widths
-                num_cols = len(pdf_df.columns)
-                available_width = A4[0] - 2 * 0.3 * inch
-                col_widths = [available_width / num_cols] * num_cols
-                
-                table = Table(data, colWidths=col_widths)
-                
-                table.setStyle(TableStyle([
-                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#5B5FC7')),
-                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                    ('FONTNAME', (0, 0), (-1, 0), title_font),
-                    ('FONTSIZE', (0, 0), (-1, 0), 9),
-                    ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
-                    ('TOPPADDING', (0, 0), (-1, 0), 8),
-                    ('FONTNAME', (0, 1), (-1, -1), body_font),
-                    ('FONTSIZE', (0, 1), (-1, -1), 7),
-                    ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-                    ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F2F2F2')]),
-                    ('LEFTPADDING', (0, 0), (-1, -1), 3),
-                    ('RIGHTPADDING', (0, 0), (-1, -1), 3),
-                    ('WORDWRAP', (0, 0), (-1, -1), True),
-                ]))
-                
-                story.append(table)
-                
-                # Footer
-                footer_style = ParagraphStyle(
-                    'Footer',
-                    parent=styles['Normal'],
-                    fontSize=8,
-                    spaceAfter=12,
-                    alignment=1,
-                    textColor=colors.grey,
-                    fontName=body_font
-                )
-                footer_text = f"Neticeler sayi: {len(pdf_df)} | Yaradilma tarixi: {pd.Timestamp.now().strftime('%d.%m.%Y %H:%M')}"
-                story.append(Spacer(1, 20))
-                story.append(Paragraph(footer_text, footer_style))
-                
-                doc.build(story)
-                output.seek(0)
-                return output
-            except Exception as e:
-                st.error(f"PDF yaradılarkən xəta: {e}")
-                return None
+                    data = [list(pdf_df.columns)] + pdf_df.values.tolist()
+                    
+                    # Calculate dynamic column widths
+                    num_cols = len(pdf_df.columns)
+                    available_width = A4[0] - 2 * 0.3 * inch
+                    col_widths = [available_width / num_cols] * num_cols
+                    
+                    table = Table(data, colWidths=col_widths)
+                    
+                    table.setStyle(TableStyle([
+                        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#5B5FC7')),
+                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('FONTNAME', (0, 0), (-1, 0), title_font),
+                        ('FONTSIZE', (0, 0), (-1, 0), 9),
+                        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+                        ('TOPPADDING', (0, 0), (-1, 0), 8),
+                        ('FONTNAME', (0, 1), (-1, -1), body_font),
+                        ('FONTSIZE', (0, 1), (-1, -1), 7),
+                        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+                        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F2F2F2')]),
+                        ('LEFTPADDING', (0, 0), (-1, -1), 3),
+                        ('RIGHTPADDING', (0, 0), (-1, -1), 3),
+                        ('WORDWRAP', (0, 0), (-1, -1), True),
+                    ]))
+                    
+                    story.append(table)
+                    
+                    # Footer
+                    footer_style = ParagraphStyle(
+                        'Footer',
+                        parent=styles['Normal'],
+                        fontSize=8,
+                        spaceAfter=12,
+                        alignment=1,
+                        textColor=colors.grey,
+                        fontName=body_font
+                    )
+                    footer_text = f"Neticeler sayi: {len(pdf_df)} | Yaradilma tarixi: {pd.Timestamp.now().strftime('%d.%m.%Y %H:%M')}"
+                    story.append(Spacer(1, 20))
+                    story.append(Paragraph(footer_text, footer_style))
+                    
+                    doc.build(story)
+                    output.seek(0)
+                    return output
+                except Exception as e:
+                    st.error(f"PDF yaradılarkən xəta: {e}")
+                    return None
        
             # Create download buttons (only if duplicates are resolved)
             if allow_download:
