@@ -52,7 +52,7 @@ st.markdown(
         
     }
 
-    .st-e6 {
+    .st-e7 {
         width: 250px !important;
         max-width: 250px !important;
     }
