@@ -393,10 +393,25 @@ if uploaded_file:
             
             # PDF download function
             def to_pdf(df, title):
+                from reportlab.pdfbase import pdfutils
+                from reportlab.pdfbase.ttfonts import TTFont
+                from reportlab.pdfbase import pdfmetrics
+                
                 output = BytesIO()
                 try:
+                    # Register DejaVu Sans font for better Unicode support
+                    try:
+                        pdfmetrics.registerFont(TTFont('DejaVuSans', 'DejaVuSans.ttf'))
+                        pdfmetrics.registerFont(TTFont('DejaVuSans-Bold', 'DejaVuSans-Bold.ttf'))
+                        unicode_font = 'DejaVuSans'
+                        unicode_font_bold = 'DejaVuSans-Bold'
+                    except:
+                        # Fallback to default fonts if DejaVu fonts not available
+                        unicode_font = 'Helvetica'
+                        unicode_font_bold = 'Helvetica-Bold'
+                    
                     doc = SimpleDocTemplate(output, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch,
-                                          leftMargin=0.5*inch, rightMargin=0.5*inch)
+                                          leftMargin=0.3*inch, rightMargin=0.3*inch)
                     
                     styles = getSampleStyleSheet()
                     title_style = ParagraphStyle(
@@ -405,61 +420,114 @@ if uploaded_file:
                         fontSize=16,
                         spaceAfter=20,
                         alignment=1,
-                        textColor=colors.HexColor('#5B5FC7')
+                        textColor=colors.HexColor('#5B5FC7'),
+                        fontName=unicode_font_bold
                     )
                     
                     story = []
                     
                     if title:
-                        title_para = Paragraph(str(title), title_style)
+                        # Ensure proper encoding for title
+                        title_text = str(title).encode('utf-8').decode('utf-8')
+                        title_para = Paragraph(title_text, title_style)
                         story.append(title_para)
                         story.append(Spacer(1, 12))
                     
                     pdf_df = df.copy()
                     
+                    # Format percentage columns
                     for col in pdf_df.columns:
                         if pdf_df[col].dtype in ['float64', 'float32', 'int64', 'int32']:
                             numeric_vals = pdf_df[col].dropna()
                             if len(numeric_vals) > 0 and numeric_vals.min() >= 0 and numeric_vals.max() <= 1:
                                 pdf_df[col] = pdf_df[col].apply(lambda x: f"{x*100:.1f}%" if pd.notna(x) else "")
                     
-                    data = [list(pdf_df.columns)]
+                    # Prepare data with proper encoding
+                    data = []
+                    
+                    # Add headers with proper encoding
+                    headers = []
+                    for col in pdf_df.columns:
+                        header_text = str(col).encode('utf-8').decode('utf-8') if col is not None else ""
+                        headers.append(header_text)
+                    data.append(headers)
+                    
+                    # Add data rows with proper encoding
                     for _, row in pdf_df.iterrows():
-                        data.append([str(val) if val is not None else "" for val in row])
+                        row_data = []
+                        for val in row:
+                            if val is not None:
+                                cell_text = str(val).encode('utf-8').decode('utf-8')
+                            else:
+                                cell_text = ""
+                            row_data.append(cell_text)
+                        data.append(row_data)
                     
-                    page_width = A4[0] - 2 * 0.5 * inch
+                    # Calculate dynamic column widths based on content
+                    available_width = A4[0] - 2 * 0.3 * inch
                     num_cols = len(pdf_df.columns)
-                    col_width = page_width / num_cols
                     
-                    table = Table(data, colWidths=[col_width] * num_cols)
+                    # Calculate max content length for each column
+                    col_widths = []
+                    for col_idx in range(num_cols):
+                        max_length = 0
+                        for row_data in data:
+                            if col_idx < len(row_data):
+                                content_length = len(str(row_data[col_idx]))
+                                max_length = max(max_length, content_length)
+                        
+                        # Set minimum and maximum widths
+                        min_width = available_width * 0.08  # Minimum 8% of page width
+                        max_width = available_width * 0.35  # Maximum 35% of page width
+                        
+                        # Calculate proportional width based on content
+                        calculated_width = max_length * 6  # 6 points per character approximately
+                        calculated_width = max(min_width, min(calculated_width, max_width))
+                        col_widths.append(calculated_width)
                     
+                    # Normalize widths to fit available space
+                    total_width = sum(col_widths)
+                    if total_width > available_width:
+                        scale_factor = available_width / total_width
+                        col_widths = [width * scale_factor for width in col_widths]
+                    
+                    table = Table(data, colWidths=col_widths)
+                    
+                    # Apply table style with proper fonts
                     table.setStyle(TableStyle([
                         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#5B5FC7')),
                         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
                         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                        ('FONTSIZE', (0, 0), (-1, 0), 10),
-                        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-                        ('FONTSIZE', (0, 1), (-1, -1), 8),
-                        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                        ('FONTNAME', (0, 0), (-1, 0), unicode_font_bold),
+                        ('FONTSIZE', (0, 0), (-1, 0), 9),
+                        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+                        ('TOPPADDING', (0, 0), (-1, 0), 8),
+                        ('FONTNAME', (0, 1), (-1, -1), unicode_font),
+                        ('FONTSIZE', (0, 1), (-1, -1), 7),
+                        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
                         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F2F2F2')]),
+                        ('LEFTPADDING', (0, 0), (-1, -1), 3),
+                        ('RIGHTPADDING', (0, 0), (-1, -1), 3),
+                        ('WORDWRAP', (0, 0), (-1, -1), True),
                     ]))
                     
                     story.append(table)
                     
+                    # Footer with proper encoding
                     footer_style = ParagraphStyle(
                         'Footer',
                         parent=styles['Normal'],
                         fontSize=8,
                         spaceAfter=12,
                         alignment=1,
-                        textColor=colors.grey
+                        textColor=colors.grey,
+                        fontName=unicode_font
                     )
                     
                     story.append(Spacer(1, 20))
                     footer_text = f"Nəticələr sayı: {len(pdf_df)} | Yaradılma tarixi: {pd.Timestamp.now().strftime('%d.%m.%Y %H:%M')}"
+                    footer_text = footer_text.encode('utf-8').decode('utf-8')
                     footer_para = Paragraph(footer_text, footer_style)
                     story.append(footer_para)
                     
