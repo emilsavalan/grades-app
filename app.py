@@ -762,13 +762,11 @@ if uploaded_file:
                 trimmed_year = original_filename[:5]
 
                 def trim_until_variant(s):
-                    # Search for "variant" in any capitalization, get its position
-                    match = re.search(r'variant', s, re.IGNORECASE)
-                    if match:
-                        # Return substring up to the start of "variant"
-                        return s[:match.start()]
+                    lower_s = s.lower()
+                    idx = lower_s.find("variant")
+                    if idx != -1:
+                        return s[:idx]
                     else:
-                        # If no "variant" found, return the whole string
                         return s
 
                 if selected_assignments:
