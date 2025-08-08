@@ -52,30 +52,54 @@ st.markdown(
         
     }
 
-    /* Increase multiselect container width */
-    .stMultiSelect > div > div > div > div {
-        max-width: none !important;
-        width: 100% !important;
+  .main .block-container {
+        max-width: 95%;
+        padding-left: 1rem;
+        padding-right: 1rem;
     }
     
-    /* Prevent text truncation in selected items */
-    .stMultiSelect [data-baseweb="tag"] {
-        max-width: none !important;
-        white-space: nowrap !important;
-    }
-    
-    /* Make the multiselect dropdown wider */
-    .stMultiSelect [data-baseweb="select"] {
+    /* Multiselect fixes to prevent trimming */
+    .stMultiSelect > div > div {
         min-width: 100% !important;
     }
     
-    /* Ensure selected items don't overlap */
+    /* Prevent truncation of selected items */
+    .stMultiSelect [data-baseweb="tag"] {
+        max-width: none !important;
+        white-space: nowrap !important;
+        overflow: visible !important;
+    }
+    
+    /* Ensure the text inside tags doesn't get cut off */
     .stMultiSelect [data-baseweb="tag"] span {
         max-width: none !important;
         overflow: visible !important;
         text-overflow: clip !important;
+        white-space: nowrap !important;
     }
     
+    /* Make the entire multiselect container wider */
+    .stMultiSelect {
+        width: 100% !important;
+    }
+    
+    /* Expand the select container */
+    .stMultiSelect [data-baseweb="select"] {
+        min-width: 100% !important;
+        width: 100% !important;
+    }
+    
+    /* Allow selected items to wrap to multiple lines if needed */
+    .stMultiSelect [data-baseweb="select"] > div {
+        flex-wrap: wrap !important;
+        min-height: auto !important;
+    }
+    
+    /* Ensure dropdown is wide enough */
+    .stMultiSelect [data-baseweb="popover"] {
+        width: 100% !important;
+        min-width: 100% !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
