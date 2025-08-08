@@ -11,8 +11,6 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-pdfmetrics.registerFont(TTFont('NotoSans-Regular', 'fonts/NotoSans-Regular.ttf'))
-pdfmetrics.registerFont(TTFont('NotoSans-Bold', 'fonts/NotoSans-Bold.ttf'))
 # Set page config to wide mode
 st.set_page_config(
     page_title="Excel Qiymətlər",
@@ -395,6 +393,7 @@ if uploaded_file:
                     return None
             
             # PDF download function
+
             def to_pdf(df, title):
                 output = BytesIO()
                 try:
@@ -402,9 +401,23 @@ if uploaded_file:
                                           leftMargin=0.5*inch, rightMargin=0.5*inch)
                     
                     styles = getSampleStyleSheet()
+                    
+                    # Use only Noto Sans fonts
+                    try:
+                        # Make sure both font paths are correct
+                        pdfmetrics.registerFont(TTFont('NotoSans-Regular', 'fonts/NotoSans-Regular.ttf'))
+                        pdfmetrics.registerFont(TTFont('NotoSans-Bold', 'fonts/NotoSans-Bold.ttf'))
+                        font_name = 'NotoSans-Regular'
+                        font_name_bold = 'NotoSans-Bold'
+                        print("Noto Sans fonts loaded successfully")
+                    except Exception as e:
+                        st.error(f"Noto Sans fonts could not be loaded: {e}")
+                        st.error("Make sure fonts/NotoSans-Regular.ttf and fonts/NotoSans-Bold.ttf exist")
+                        return None
+                    
                     title_style = ParagraphStyle(
                         'CustomTitle',
-                        fontName='NotoSans-Regular',
+                        fontName=font_name_bold,
                         parent=styles['Heading1'],
                         fontSize=16,
                         spaceAfter=20,
@@ -415,21 +428,37 @@ if uploaded_file:
                     story = []
                     
                     if title:
-                        title_para = Paragraph(str(title), title_style)
+                        title_text = str(title) if title else ""
+                        title_para = Paragraph(title_text, title_style)
                         story.append(title_para)
                         story.append(Spacer(1, 12))
                     
                     pdf_df = df.copy()
                     
+                    # Handle percentage formatting
                     for col in pdf_df.columns:
                         if pdf_df[col].dtype in ['float64', 'float32', 'int64', 'int32']:
                             numeric_vals = pdf_df[col].dropna()
                             if len(numeric_vals) > 0 and numeric_vals.min() >= 0 and numeric_vals.max() <= 1:
                                 pdf_df[col] = pdf_df[col].apply(lambda x: f"{x*100:.1f}%" if pd.notna(x) else "")
                     
-                    data = [list(pdf_df.columns)]
+                    # Prepare table data
+                    data = []
+                    
+                    # Headers
+                    headers = []
+                    for col in pdf_df.columns:
+                        header_text = str(col) if col is not None else ""
+                        headers.append(header_text)
+                    data.append(headers)
+                    
+                    # Data rows
                     for _, row in pdf_df.iterrows():
-                        data.append([str(val) if val is not None else "" for val in row])
+                        row_data = []
+                        for val in row:
+                            cell_text = str(val) if val is not None else ""
+                            row_data.append(cell_text)
+                        data.append(row_data)
                     
                     page_width = A4[0] - 2 * 0.5 * inch
                     num_cols = len(pdf_df.columns)
@@ -437,15 +466,15 @@ if uploaded_file:
                     
                     table = Table(data, colWidths=[col_width] * num_cols)
                     
+                    # Use Noto Sans for all table content
                     table.setStyle(TableStyle([
-                            ('FONTNAME', (0, 0), (-1, 0), 'NotoSans-Bold'),  # header row in bold
-                            ('FONTNAME', (0, 1), (-1, -1), 'NotoSans-Regular'),      # body rows regular
+                        ('FONTNAME', (0, 0), (-1, 0), font_name_bold),  # header row
+                        ('FONTNAME', (0, 1), (-1, -1), font_name),      # body rows
                         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#5B5FC7')),
                         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
                         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                         ('FONTSIZE', (0, 0), (-1, 0), 10),
                         ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
                         ('FONTSIZE', (0, 1), (-1, -1), 8),
                         ('GRID', (0, 0), (-1, -1), 1, colors.black),
                         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
@@ -456,6 +485,7 @@ if uploaded_file:
                     
                     footer_style = ParagraphStyle(
                         'Footer',
+                        fontName=font_name,
                         parent=styles['Normal'],
                         fontSize=8,
                         spaceAfter=12,
@@ -475,7 +505,6 @@ if uploaded_file:
                 except Exception as e:
                     st.error(f"PDF yaradılarkən xəta: {e}")
                     return None
-       
             # Create download buttons (only if duplicates are resolved)
             if allow_download:
                 excel_data = to_excel(final_filtered_df, title_cell)
