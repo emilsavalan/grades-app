@@ -52,11 +52,30 @@ st.markdown(
         
     }
 
-    .st-e7 {
-        width: 250px !important;
-        max-width: 250px !important;
+    /* Increase multiselect container width */
+    .stMultiSelect > div > div > div > div {
+        max-width: none !important;
+        width: 100% !important;
     }
-
+    
+    /* Prevent text truncation in selected items */
+    .stMultiSelect [data-baseweb="tag"] {
+        max-width: none !important;
+        white-space: nowrap !important;
+    }
+    
+    /* Make the multiselect dropdown wider */
+    .stMultiSelect [data-baseweb="select"] {
+        min-width: 100% !important;
+    }
+    
+    /* Ensure selected items don't overlap */
+    .stMultiSelect [data-baseweb="tag"] span {
+        max-width: none !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+    }
+    
     </style>
     """,
     unsafe_allow_html=True,
