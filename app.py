@@ -395,65 +395,51 @@ if uploaded_file:
             def to_pdf(df, title):
                 from reportlab.pdfbase.ttfonts import TTFont
                 from reportlab.pdfbase import pdfmetrics
+                from reportlab.lib.fonts import addMapping
                 import unicodedata
                 
                 output = BytesIO()
                 try:
-                    # Function to clean and normalize text
-                    def clean_text(text):
+                    # Function to fix Turkish/Azerbaijani character display issues
+                    def fix_turkish_chars(text):
                         if text is None:
                             return ""
                         
-                        # Convert to string and normalize Unicode
                         text_str = str(text)
                         
-                        # Normalize to NFD (decomposed) then back to NFC (composed)
-                        normalized = unicodedata.normalize('NFD', text_str)
-                        normalized = unicodedata.normalize('NFC', normalized)
-                        
-                        # Replace problematic characters that might cause artifacts
-                        replacements = {
-                            'İ': 'İ',  # Turkish capital I with dot
-                            'ı': 'ı',  # Turkish small dotless i
-                            'Ə': 'Ə',  # Azerbaijani schwa
-                            'ə': 'ə',  # Azerbaijani small schwa
-                            'Ğ': 'Ğ',  # Turkish soft G
-                            'ğ': 'ğ',  # Turkish small soft g
-                            'Ş': 'Ş',  # Turkish S with cedilla
-                            'ş': 'ş',  # Turkish small s with cedilla
-                            'Ç': 'Ç',  # Turkish C with cedilla
-                            'ç': 'ç',  # Turkish small c with cedilla
-                            'Ü': 'Ü',  # Turkish U with diaeresis
-                            'ü': 'ü',  # Turkish small u with diaeresis
-                            'Ö': 'Ö',  # Turkish O with diaeresis
-                            'ö': 'ö',  # Turkish small o with diaeresis
+                        # Character mappings to avoid font rendering issues
+                        char_fixes = {
+                            # Turkish/Azerbaijani specific fixes
+                            'İ': 'I',   # Capital I with dot -> regular I (for PDF display)
+                            'ı': 'i',   # Dotless i -> regular i (for PDF display)
+                            'Ğ': 'G',   # Soft G -> regular G
+                            'ğ': 'g',   # Soft g -> regular g
+                            'Ş': 'S',   # S with cedilla -> regular S
+                            'ş': 's',   # s with cedilla -> regular s
+                            'Ç': 'C',   # C with cedilla -> regular C
+                            'ç': 'c',   # c with cedilla -> regular c
+                            'Ü': 'U',   # U with diaeresis -> regular U
+                            'ü': 'u',   # u with diaeresis -> regular u
+                            'Ö': 'O',   # O with diaeresis -> regular O
+                            'ö': 'o',   # o with diaeresis -> regular o
+                            'Ə': 'E',   # Azerbaijani schwa -> E
+                            'ə': 'e',   # Azerbaijani small schwa -> e
                         }
                         
-                        for original, replacement in replacements.items():
-                            normalized = normalized.replace(original, replacement)
+                        # Apply fixes
+                        for original, replacement in char_fixes.items():
+                            text_str = text_str.replace(original, replacement)
                         
-                        return normalized
+                        return text_str
                     
-                    # Try to register Unicode-capable fonts
-                    unicode_font = 'Helvetica'
-                    unicode_font_bold = 'Helvetica-Bold'
+                    # Alternative approach: Keep original characters but use better font handling
+                    def keep_original_chars(text):
+                        if text is None:
+                            return ""
+                        return str(text).encode('latin-1', errors='replace').decode('latin-1')
                     
-                    # Try multiple font options for better Unicode support
-                    font_attempts = [
-                        ('DejaVuSans.ttf', 'DejaVuSans-Bold.ttf', 'DejaVuSans', 'DejaVuSans-Bold'),
-                        ('arial.ttf', 'arialbd.ttf', 'Arial', 'Arial-Bold'),
-                        ('calibri.ttf', 'calibrib.ttf', 'Calibri', 'Calibri-Bold'),
-                    ]
-                    
-                    for regular_file, bold_file, regular_name, bold_name in font_attempts:
-                        try:
-                            pdfmetrics.registerFont(TTFont(regular_name, regular_file))
-                            pdfmetrics.registerFont(TTFont(bold_name, bold_file))
-                            unicode_font = regular_name
-                            unicode_font_bold = bold_name
-                            break
-                        except:
-                            continue
+                    # Use the character replacement approach for better PDF compatibility
+                    process_text = fix_turkish_chars
                     
                     doc = SimpleDocTemplate(output, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch,
                                           leftMargin=0.3*inch, rightMargin=0.3*inch)
@@ -466,14 +452,13 @@ if uploaded_file:
                         spaceAfter=20,
                         alignment=1,
                         textColor=colors.HexColor('#5B5FC7'),
-                        fontName=unicode_font_bold
+                        fontName='Helvetica-Bold'  # Use standard font
                     )
                     
                     story = []
                     
                     if title:
-                        # Clean and normalize title text
-                        title_text = clean_text(title)
+                        title_text = process_text(title)
                         title_para = Paragraph(title_text, title_style)
                         story.append(title_para)
                         story.append(Spacer(1, 12))
@@ -487,21 +472,21 @@ if uploaded_file:
                             if len(numeric_vals) > 0 and numeric_vals.min() >= 0 and numeric_vals.max() <= 1:
                                 pdf_df[col] = pdf_df[col].apply(lambda x: f"{x*100:.1f}%" if pd.notna(x) else "")
                     
-                    # Prepare data with proper text cleaning
+                    # Prepare data with text processing
                     data = []
                     
-                    # Add headers with text cleaning
+                    # Add headers
                     headers = []
                     for col in pdf_df.columns:
-                        header_text = clean_text(col)
+                        header_text = process_text(col)
                         headers.append(header_text)
                     data.append(headers)
                     
-                    # Add data rows with text cleaning
+                    # Add data rows
                     for _, row in pdf_df.iterrows():
                         row_data = []
                         for val in row:
-                            cell_text = clean_text(val)
+                            cell_text = process_text(val)
                             row_data.append(cell_text)
                         data.append(row_data)
                     
@@ -540,11 +525,11 @@ if uploaded_file:
                         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#5B5FC7')),
                         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
                         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                        ('FONTNAME', (0, 0), (-1, 0), unicode_font_bold),
+                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
                         ('FONTSIZE', (0, 0), (-1, 0), 9),
                         ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
                         ('TOPPADDING', (0, 0), (-1, 0), 8),
-                        ('FONTNAME', (0, 1), (-1, -1), unicode_font),
+                        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
                         ('FONTSIZE', (0, 1), (-1, -1), 7),
                         ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
                         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
@@ -564,12 +549,12 @@ if uploaded_file:
                         spaceAfter=12,
                         alignment=1,
                         textColor=colors.grey,
-                        fontName=unicode_font
+                        fontName='Helvetica'
                     )
                     
                     story.append(Spacer(1, 20))
-                    footer_text = f"Nəticələr sayı: {len(pdf_df)} | Yaradılma tarixi: {pd.Timestamp.now().strftime('%d.%m.%Y %H:%M')}"
-                    footer_text = clean_text(footer_text)
+                    footer_text = f"Neticeler sayi: {len(pdf_df)} | Yaradilma tarixi: {pd.Timestamp.now().strftime('%d.%m.%Y %H:%M')}"
+                    footer_text = process_text(footer_text)
                     footer_para = Paragraph(footer_text, footer_style)
                     story.append(footer_para)
                     
