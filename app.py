@@ -10,9 +10,9 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-pdfmetrics.registerFont(TTFont('NotoSans-Regular', 'fonts/NotoSans-Regular.otf'))
-pdfmetrics.registerFont(TTFont('NotoSans-Bold', 'fonts/NotoSans-Bold.otf'))
+from reportlab.pdfbase.ttfonts import OTFont
+pdfmetrics.registerFont(OTFont('NotoSans-Regular', 'fonts/NotoSans-Regular.otf'))
+pdfmetrics.registerFont(OTFont('NotoSans-Bold', 'fonts/NotoSans-Bold.otf'))
 # Set page config to wide mode
 st.set_page_config(
     page_title="Excel Qiymətlər",
