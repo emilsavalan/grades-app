@@ -402,12 +402,10 @@ if uploaded_file:
 
                     # Use only Noto Sans fonts
                     try:
-                        # Make sure both font paths are correct
                         pdfmetrics.registerFont(TTFont('NotoSans-Regular', 'fonts/NotoSans-Regular.ttf'))
                         pdfmetrics.registerFont(TTFont('NotoSans-Bold', 'fonts/NotoSans-Bold.ttf'))
                         font_name = 'NotoSans-Regular'
                         font_name_bold = 'NotoSans-Bold'
-                        print("Noto Sans fonts loaded successfully")
                     except Exception as e:
                         st.error(f"Noto Sans fonts could not be loaded: {e}")
                         st.error("Make sure fonts/NotoSans-Regular.ttf and fonts/NotoSans-Bold.ttf exist")
@@ -433,12 +431,13 @@ if uploaded_file:
 
                     pdf_df = df.copy()
 
-                    # Find assignments column index first (before any other processing)
-                    assignments_col_index = None
+                    # --- MODIFICATION START: Dynamically find all long-content columns ---
+                    long_content_col_indices = []
                     for i, col in enumerate(pdf_df.columns):
-                        if col and "assignment" in str(col).lower():
-                            assignments_col_index = i
-                            break
+                        col_name_lower = str(col).lower()
+                        if "assignment" in col_name_lower or "email" in col_name_lower:
+                            long_content_col_indices.append(i)
+                    # --- MODIFICATION END ---
 
                     # Handle percentage formatting
                     for col in pdf_df.columns:
@@ -457,70 +456,73 @@ if uploaded_file:
                         headers.append(header_text)
                     data.append(headers)
 
-                    # Data rows with text wrapping for assignments column
+                    # Data rows with text wrapping
                     for _, row in pdf_df.iterrows():
                         row_data = []
                         for i, val in enumerate(row):
-                            if val is not None:
-                                cell_text = str(val)
-                                # Wrap long text in assignments column
-                                if i == assignments_col_index and len(cell_text) > 50:
-                                    # Use Paragraph for text wrapping in assignments column
-                                    wrapped_text = Paragraph(cell_text, ParagraphStyle(
-                                        'CellStyle',
-                                        fontName=font_name,
-                                        fontSize=8,
-                                        alignment=0,  # Left alignment
-                                        leading=10
-                                    ))
-                                    row_data.append(wrapped_text)
-                                else:
-                                    row_data.append(cell_text)
+                            cell_text = str(val) if val is not None else ""
+                            
+                            # --- MODIFICATION START: Apply Paragraph for all long-content columns ---
+                            if i in long_content_col_indices and len(cell_text) > 20: # Threshold for wrapping long text
+                                # Use Paragraph for text wrapping with smaller font size
+                                wrapped_text = Paragraph(cell_text, ParagraphStyle(
+                                    'CellStyle',
+                                    fontName=font_name,
+                                    fontSize=8, # Smaller font size for long values
+                                    alignment=0,  # Left alignment
+                                    leading=10
+                                ))
+                                row_data.append(wrapped_text)
                             else:
-                                row_data.append("")
+                                row_data.append(cell_text)
+                            # --- MODIFICATION END ---
                         data.append(row_data)
 
                     page_width = A4[0] - 2 * 0.5 * inch
                     num_cols = len(pdf_df.columns)
 
-                    # Calculate dynamic column widths based on assignments column (already found above)
+                    # --- MODIFICATION START: Calculate dynamic widths for all long-content columns ---
                     col_widths = []
-                    if assignments_col_index is not None:
-                        # If assignments column exists, give it 40% width
-                        remaining_cols = num_cols - 1
-                        other_col_width = (page_width * 0.6) / remaining_cols if remaining_cols > 0 else 0
-
+                    num_long_cols = len(long_content_col_indices)
+                    
+                    if num_long_cols > 0:
+                        # Allocate 25% of width to each long column
+                        long_col_width = (page_width * 0.25) / num_long_cols 
+                        # Distribute the rest among other columns
+                        remaining_width = page_width - (long_col_width * num_long_cols)
+                        num_other_cols = num_cols - num_long_cols
+                        other_col_width = remaining_width / num_other_cols if num_other_cols > 0 else 0
+                        
                         for i in range(num_cols):
-                            if i == assignments_col_index:
-                                col_widths.append(page_width * 0.4)
+                            if i in long_content_col_indices:
+                                col_widths.append(long_col_width)
                             else:
                                 col_widths.append(other_col_width)
                     else:
-                        # No assignments column, use equal widths
+                        # No long columns, use equal widths
                         col_widths = [page_width / num_cols] * num_cols
+                    # --- MODIFICATION END ---
 
-                    # Create the Table object here before setting its style
                     table = Table(data, colWidths=col_widths)
 
-                    # Use Noto Sans for all table content with better text wrapping
                     table_style = [
-                        ('FONTNAME', (0, 0), (-1, 0), font_name_bold),  # header row
-                        ('FONTNAME', (0, 1), (-1, -1), font_name),      # body rows
+                        ('FONTNAME', (0, 0), (-1, 0), font_name_bold),
+                        ('FONTNAME', (0, 1), (-1, -1), font_name),
                         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#5B5FC7')),
                         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
                         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                         ('FONTSIZE', (0, 0), (-1, 0), 10),
                         ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                        ('FONTSIZE', (0, 1), (-1, -1), 8),
+                        ('FONTSIZE', (0, 1), (-1, -1), 9), # Slightly smaller default font size for body
                         ('GRID', (0, 0), (-1, -1), 1, colors.black),
                         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F2F2F2')]),
                     ]
 
-                    # Special alignment for assignments column
-                    if assignments_col_index is not None:
-                        table_style.append(('ALIGN', (assignments_col_index, 1), (assignments_col_index, -1), 'LEFT'))
-                        table_style.append(('VALIGN', (assignments_col_index, 1), (assignments_col_index, -1), 'TOP'))
+                    # Special alignment for long-content columns
+                    for col_index in long_content_col_indices:
+                        table_style.append(('ALIGN', (col_index, 1), (col_index, -1), 'LEFT'))
+                        table_style.append(('VALIGN', (col_index, 1), (col_index, -1), 'TOP'))
 
                     table.setStyle(TableStyle(table_style))
 
@@ -548,6 +550,9 @@ if uploaded_file:
                 except Exception as e:
                     st.error(f"PDF yaradılarkən xəta: {e}")
                     return None
+
+
+
             # Create download buttons (only if duplicates are resolved)
             if allow_download:
                 excel_data = to_excel(final_filtered_df, title_cell)
