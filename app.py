@@ -51,18 +51,15 @@ st.markdown(
         visibility: visible;
         
     }
-
-/* Make multiselect selected tokens wrap and not be ellipsized */
-[data-testid="stMultiSelect"] div[role="listbox"] div {
-    white-space: normal !important;
-    overflow: visible !important;
-    text-overflow: clip !important;
+/* Force multiselect chip container to be wider so full names are visible */
+div[data-baseweb="select"] > div {
     max-width: none !important;
-    min-width: 0 !important;
+    width: auto !important;
 }
 
-/* Extra: if chips are inline-flex, allow them to expand to full content */
-[data-testid="stMultiSelect"] div[role="listbox"] div > * {
+/* Also make each selected chip expand to fit content */
+div[data-baseweb="tag"] {
+    max-width: none !important;
     white-space: normal !important;
 }
 
