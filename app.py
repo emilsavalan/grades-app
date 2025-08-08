@@ -42,10 +42,10 @@ st.markdown(
         content: '""" + translated_limit + """';
         color: #6C757D;
     }
-    [data-testid="stBaseButton-secondary"] {
+    [class="st-emotion-cache-r92n3i e7nj0r42"] {
     font-size: 0;
         position: relative;    }
-   [data-testid="stBaseButton-secondary"]::after {
+   [class="st-emotion-cache-r92n3i e7nj0r42"]::after {
         content: '""" + translated_browse_files + """';
          font-size: 1rem;
         visibility: visible;
