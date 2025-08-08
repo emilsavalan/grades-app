@@ -767,7 +767,7 @@ if uploaded_file:
                 if selected_assignments:
                     first_filter = str(selected_assignments[0])
                     filter_part = trim_until_variant(first_filter)
-                else 
+                else:
                     filter_part = "unfiltered"
                 
 
