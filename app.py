@@ -770,7 +770,7 @@ if uploaded_file:
                         return s
 
                 if selected_assignments:
-                    first_filter = str(selected_assignments[0])[:35]
+                    first_filter = str(selected_assignments[0])
                     filter_part = trim_until_variant(first_filter)
                 
                 excel_filename = f"{trimmed_year}{filter_part}.xlsx"
