@@ -51,58 +51,24 @@ st.markdown(
         visibility: visible;
         
     }
-   /* Multiselect fixes to prevent trimming */
-    .stMultiSelect > div > div {
-        min-width: 100% !important;
-    }
-    
-    /* Prevent truncation of selected items */
-    .stMultiSelect [data-baseweb="tag"] {
-        max-width: none !important;
-        white-space: nowrap !important;
-        overflow: visible !important;
-    }
-    
-    /* Ensure the text inside tags doesn't get cut off */
-    .stMultiSelect [data-baseweb="tag"] span {
-        max-width: none !important;
-        overflow: visible !important;
-        text-overflow: clip !important;
-        white-space: nowrap !important;
-    }
-    
-    /* Make the entire multiselect container wider */
-    .stMultiSelect {
-        width: 100% !important;
-    }
-    
-    /* Expand the select container */
-    .stMultiSelect [data-baseweb="select"] {
-        min-width: 100% !important;
-        width: 100% !important;
-    }
-    
-    /* Allow selected items to wrap to multiple lines if needed */
-    .stMultiSelect [data-baseweb="select"] > div {
-        flex-wrap: wrap !important;
-        min-height: 38px !important;  /* Maintain consistent height */
-    }
-    
-    /* Keep the input field at proper height even when empty */
-    .stMultiSelect [data-baseweb="select"] [data-baseweb="input"] {
-        min-height: 38px !important;
-    }
-    
-    /* Ensure consistent height for the entire select container */
-    .stMultiSelect [data-baseweb="select"] {
-        min-height: 38px !important;
-    }
-    
-    /* Ensure dropdown is wide enough */
-    .stMultiSelect [data-baseweb="popover"] {
-        width: 100% !important;
-        min-width: 100% !important;
-    }
+   
+.stMultiSelect {
+    /* Fix the container */
+    width: 100% !important;
+}
+
+.stMultiSelect [data-baseweb="select"] {
+    /* Fix dimensions and ensure consistent height */
+    width: 100% !important;
+    min-height: 38px !important;
+}
+
+.stMultiSelect [data-baseweb="tag"] {
+    /* Prevent text trimming in selected items */
+    max-width: none !important;
+    white-space: nowrap !important;
+}
+
     </style>
     """,
     unsafe_allow_html=True,
