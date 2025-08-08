@@ -393,7 +393,6 @@ if uploaded_file:
                     return None
             
             # PDF download function
-
             def to_pdf(df, title):
                 output = BytesIO()
                 try:
@@ -442,7 +441,7 @@ if uploaded_file:
                             if len(numeric_vals) > 0 and numeric_vals.min() >= 0 and numeric_vals.max() <= 1:
                                 pdf_df[col] = pdf_df[col].apply(lambda x: f"{x*100:.1f}%" if pd.notna(x) else "")
                     
-                    # Prepare table data
+                    # Prepare table data with text wrapping for long content
                     data = []
                     
                     # Headers
@@ -452,22 +451,55 @@ if uploaded_file:
                         headers.append(header_text)
                     data.append(headers)
                     
-                    # Data rows
+                    # Data rows with text wrapping for assignments column
                     for _, row in pdf_df.iterrows():
                         row_data = []
-                        for val in row:
-                            cell_text = str(val) if val is not None else ""
-                            row_data.append(cell_text)
+                        for i, val in enumerate(row):
+                            if val is not None:
+                                cell_text = str(val)
+                                # Wrap long text in assignments column
+                                if i == assignments_col_index and len(cell_text) > 50:
+                                    # Use Paragraph for text wrapping in assignments column
+                                    wrapped_text = Paragraph(cell_text, ParagraphStyle(
+                                        'CellStyle',
+                                        fontName=font_name,
+                                        fontSize=8,
+                                        alignment=0,  # Left alignment
+                                        leading=10
+                                    ))
+                                    row_data.append(wrapped_text)
+                                else:
+                                    row_data.append(cell_text)
+                            else:
+                                row_data.append("")
                         data.append(row_data)
                     
                     page_width = A4[0] - 2 * 0.5 * inch
                     num_cols = len(pdf_df.columns)
-                    col_width = page_width / num_cols
                     
-                    table = Table(data, colWidths=[col_width] * num_cols)
+                    # Calculate dynamic column widths based on content
+                    col_widths = []
+                    assignments_col_index = None
                     
-                    # Use Noto Sans for all table content
-                    table.setStyle(TableStyle([
+                    # Find assignments column and calculate widths
+                    for i, col in enumerate(pdf_df.columns):
+                        if col and "assignment" in str(col).lower():
+                            assignments_col_index = i
+                            # Give assignments column 40% of total width
+                            col_widths.append(page_width * 0.4)
+                        else:
+                            # Distribute remaining 60% among other columns
+                            remaining_cols = num_cols - 1 if assignments_col_index is not None else num_cols
+                            col_widths.append((page_width * 0.6) / remaining_cols if assignments_col_index is not None else page_width / num_cols)
+                    
+                    # If no assignments column found, use equal widths
+                    if assignments_col_index is None:
+                        col_widths = [page_width / num_cols] * num_cols
+                    
+                    table = Table(data, colWidths=col_widths)
+                    
+                    # Use Noto Sans for all table content with better text wrapping
+                    table_style = [
                         ('FONTNAME', (0, 0), (-1, 0), font_name_bold),  # header row
                         ('FONTNAME', (0, 1), (-1, -1), font_name),      # body rows
                         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#5B5FC7')),
@@ -479,7 +511,14 @@ if uploaded_file:
                         ('GRID', (0, 0), (-1, -1), 1, colors.black),
                         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F2F2F2')]),
-                    ]))
+                    ]
+                    
+                    # Special alignment for assignments column
+                    if assignments_col_index is not None:
+                        table_style.append(('ALIGN', (assignments_col_index, 1), (assignments_col_index, -1), 'LEFT'))
+                        table_style.append(('VALIGN', (assignments_col_index, 1), (assignments_col_index, -1), 'TOP'))
+                    
+                    table.setStyle(TableStyle(table_style))
                     
                     story.append(table)
                     
