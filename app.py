@@ -404,7 +404,7 @@ if uploaded_file:
                     styles = getSampleStyleSheet()
                     title_style = ParagraphStyle(
                         'CustomTitle',
-                        fontnName='SegoeUI'
+                        fontnName='SegoeUI',
                         parent=styles['Heading1'],
                         fontSize=16,
                         spaceAfter=20,
