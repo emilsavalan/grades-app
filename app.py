@@ -567,7 +567,6 @@ if uploaded_file:
                     return None
             # Add this function after your existing to_pdf function
 
-
             def to_pdf_landscape(df, title):
                 output = BytesIO()
                 try:
@@ -760,47 +759,25 @@ if uploaded_file:
                 
                 # Generate filenames
                 original_filename = uploaded_file.name
-                base_name = original_filename.rsplit('.', 1)[0]
-                if len(base_name) > 20:
-                    trimmed_name = base_name[:20]  # Take first 20 characters instead of removing last 20
-                else:
-                    trimmed_name = base_name
-                
-                # Create assignment string from intersection of selected assignments
-                if selected_assignments and len(selected_assignments) > 0:
-                    if len(selected_assignments) == 1:
-                        # If only one assignment, use it as is
-                        assignment_string = str(selected_assignments[0])
+                trimmed_year = original_filename[:5]
+
+                def trim_until_variant(s):
+                    # Search for "variant" in any capitalization, get its position
+                    match = re.search(r'variant', s, re.IGNORECASE)
+                    if match:
+                        # Return substring up to the start of "variant"
+                        return s[:match.start()]
                     else:
-                        # Find the longest common prefix (intersection) of all selected assignments
-                        assignment_strings = [str(assignment) for assignment in selected_assignments]
-                        common_prefix = assignment_strings[0]
-                        
-                        for assignment in assignment_strings[1:]:
-                            # Find common prefix between current common_prefix and next assignment
-                            new_prefix = ""
-                            for i in range(min(len(common_prefix), len(assignment))):
-                                if common_prefix[i] == assignment[i]:
-                                    new_prefix += common_prefix[i]
-                                else:
-                                    break
-                            common_prefix = new_prefix
-                        
-                        assignment_string = common_prefix.rstrip()  # Remove trailing spaces
-                    
-                    # Limit length and clean for filename
-                    if len(assignment_string) > 50:
-                        assignment_string = assignment_string[:50]
-                    # Clean the assignment string for filename (remove problematic characters)
-                    assignment_string = "".join(c for c in assignment_string if c.isalnum() or c in "._- ")
-                    assignment_string = assignment_string.replace(" ", "_").rstrip("_")
-                    filter_part = f"_{assignment_string}" if assignment_string else ""
-                else:
-                    filter_part = ""
+                        # If no "variant" found, return the whole string
+                        return s
+
+                if selected_assignments:
+                    first_filter = str(selected_assignments[0])[:20]
+                    filter_part = trim_until_variant(first_filter)
                 
-                excel_filename = f"{trimmed_name}{filter_part}.xlsx"
-                pdf_filename = f"{trimmed_name}{filter_part}.pdf"
-                pdf_landscape_filename = f"{trimmed_name}{filter_part}_landscape.pdf"
+                excel_filename = f"{trimmed_year}{filter_part}.xlsx"
+                pdf_filename = f"{trimmed_year}{filter_part}_dik.pdf"
+                pdf_landscape_filename = f"{trimmed_year}{filter_part}.pdf"
                 
                 # Create three columns for the buttons
                 col1, col2, col3 = st.columns(3)
@@ -819,7 +796,7 @@ if uploaded_file:
                 if pdf_data:
                     with col2:
                         st.download_button(
-                            label="📄 PDF (Portrait)",
+                            label="📄 PDF (Dikinə)",
                             data=pdf_data,
                             file_name=pdf_filename,
                             mime="application/pdf"
@@ -829,7 +806,7 @@ if uploaded_file:
                 if pdf_landscape_data:
                     with col3:
                         st.download_button(
-                            label="📄 PDF (Landscape)",
+                            label="📄 PDF (Üfüqi)",
                             data=pdf_landscape_data,
                             file_name=pdf_landscape_filename,
                             mime="application/pdf"
@@ -839,8 +816,8 @@ if uploaded_file:
                 if not excel_data:
                     st.warning("Excel faylı yaradıla bilmədi")
                 if not pdf_data:
-                    st.warning("PDF (Portrait) faylı yaradıla bilmədi")
+                    st.warning("PDF (Dik) faylı yaradıla bilmədi")
                 if not pdf_landscape_data:
-                    st.warning("PDF (Landscape) faylı yaradıla bilmədi")
+                    st.warning("PDF (Üfüqi) faylı yaradıla bilmədi")
             else:
                 st.error("❌ Yükləmək olmaz. Təkrarları aradan qaldırın.")
