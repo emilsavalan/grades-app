@@ -52,31 +52,7 @@ st.markdown(
         
     }
 
-  .main .block-container {
-        max-width: 95%;
-        padding-left: 1rem;
-        padding-right: 1rem;
-    }
-    
-    /* Multiselect fixes to prevent trimming */
-    .stMultiSelect > div > div {
-        min-width: 100% !important;
-    }
-    
-    /* Prevent truncation of selected items */
-    .stMultiSelect [data-baseweb="tag"] {
-        max-width: none !important;
-        white-space: nowrap !important;
-        overflow: visible !important;
-    }
-    
-    /* Ensure the text inside tags doesn't get cut off */
-    .stMultiSelect [data-baseweb="tag"] span {
-        max-width: none !important;
-        overflow: visible !important;
-        text-overflow: clip !important;
-        white-space: nowrap !important;
-    }
+  
     
     /* Make the entire multiselect container wider */
     .stMultiSelect {
