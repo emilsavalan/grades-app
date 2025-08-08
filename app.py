@@ -9,7 +9,10 @@ from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
-
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+pdfmetrics.registerFont(TTFont('SegoeUI', 'fonts/segoeuithis.ttf'))
+pdfmetrics.registerFont(TTFont('SegoeUI-Bold', 'fonts/segoeuithibd.ttf'))
 # Set page config to wide mode
 st.set_page_config(
     page_title="Excel Qiymətlər",
@@ -401,6 +404,7 @@ if uploaded_file:
                     styles = getSampleStyleSheet()
                     title_style = ParagraphStyle(
                         'CustomTitle',
+                        fontnName='SegoeUI'
                         parent=styles['Heading1'],
                         fontSize=16,
                         spaceAfter=20,
@@ -434,10 +438,11 @@ if uploaded_file:
                     table = Table(data, colWidths=[col_width] * num_cols)
                     
                     table.setStyle(TableStyle([
+                            ('FONTNAME', (0, 0), (-1, 0), 'SegoeUI-Bold'),  # header row in bold
+                            ('FONTNAME', (0, 1), (-1, -1), 'SegoeUI'),      # body rows regular
                         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#5B5FC7')),
                         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
                         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
                         ('FONTSIZE', (0, 0), (-1, 0), 10),
                         ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
                         ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
