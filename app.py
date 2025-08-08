@@ -431,9 +431,13 @@ if uploaded_file:
 
                     long_content_col_indices = []
                     short_content_col_indices = []
+                    first_col_index = 0  # Assuming the first column is always the names
+                    
                     for i, col in enumerate(pdf_df.columns):
                         col_name_lower = str(col).lower()
-                        if "assignment" in col_name_lower or "email" in col_name_lower:
+                        if i == first_col_index:
+                            pass # The first column will be handled separately
+                        elif "assignment" in col_name_lower or "email" in col_name_lower:
                             long_content_col_indices.append(i)
                         else:
                             short_content_col_indices.append(i)
@@ -453,7 +457,8 @@ if uploaded_file:
                         for i, val in enumerate(row):
                             cell_text = str(val) if val is not None else ""
                             
-                            if i in long_content_col_indices and len(cell_text) > 20:
+                            # Apply text wrapping and smaller font size to long content columns AND the first column
+                            if i == first_col_index or (i in long_content_col_indices and len(cell_text) > 20):
                                 wrapped_text = Paragraph(cell_text, ParagraphStyle(
                                     'CellStyle',
                                     fontName=font_name,
@@ -469,23 +474,27 @@ if uploaded_file:
                     page_width = A4[0] - 2 * 0.5 * inch
                     num_cols = len(pdf_df.columns)
                     
-                    # --- REVISED LOGIC START: Give short columns a fixed width, then distribute the rest ---
+                    # --- REVISED LOGIC START: Assign fixed width to first and long columns, then distribute the rest to short columns ---
                     col_widths = [0] * num_cols
-                    fixed_short_width = 1.0 * inch  # A reasonable, minimal width for short columns
-
-                    # Assign fixed widths to short columns first
-                    for i in short_content_col_indices:
-                        col_widths[i] = fixed_short_width
-
-                    # Calculate remaining width
-                    remaining_width = page_width - (len(short_content_col_indices) * fixed_short_width)
-
-                    # Distribute remaining width among long columns
-                    num_long_cols = len(long_content_col_indices)
-                    if num_long_cols > 0:
-                        long_col_width = remaining_width / num_long_cols
-                        for i in long_content_col_indices:
-                            col_widths[i] = long_col_width
+                    
+                    # 1. Assign a fixed width to the first column (for names)
+                    first_col_width = 1.5 * inch # A more generous width for names
+                    col_widths[first_col_index] = first_col_width
+                    
+                    # 2. Assign a fixed width to the long content columns
+                    long_col_width = 1.2 * inch # A fixed width for email/assignment
+                    for i in long_content_col_indices:
+                        col_widths[i] = long_col_width
+                        
+                    # 3. Calculate remaining width for the "other" (short) columns
+                    total_assigned_width = first_col_width + (len(long_content_col_indices) * long_col_width)
+                    remaining_width = page_width - total_assigned_width
+                    
+                    num_short_cols = len(short_content_col_indices)
+                    if num_short_cols > 0:
+                        short_col_width = remaining_width / num_short_cols
+                        for i in short_content_col_indices:
+                            col_widths[i] = short_col_width
                     # --- REVISED LOGIC END ---
 
                     table = Table(data, colWidths=col_widths)
@@ -503,6 +512,10 @@ if uploaded_file:
                         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F2F2F2')]),
                     ]
+
+                    # Apply specific alignment and wrapping to the first and long content columns
+                    table_style.append(('ALIGN', (first_col_index, 1), (first_col_index, -1), 'LEFT'))
+                    table_style.append(('VALIGN', (first_col_index, 1), (first_col_index, -1), 'TOP'))
 
                     for col_index in long_content_col_indices:
                         table_style.append(('ALIGN', (col_index, 1), (col_index, -1), 'LEFT'))
