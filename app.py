@@ -577,8 +577,8 @@ if uploaded_file:
                     styles = getSampleStyleSheet()
 
                     try:
-                        pdfmetrics.registerFont(TTFont('Segoe UI', 'fonts/segoeuithis.ttf'))
-                        pdfmetrics.registerFont(TTFont('Segoe UI-Bold', 'fonts/segoeuithibd.ttf'))
+                        pdfmetrics.registerFont(TTFont('Segoe UI', 'fonts/random.ttf'))
+                        pdfmetrics.registerFont(TTFont('Segoe UI-Bold', 'fonts/random.ttf'))
                         font_name = 'Segoe UI'
                         font_name_bold = 'Segoe UI-Bold'
                     except Exception as e:
